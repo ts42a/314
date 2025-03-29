@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Easy Booking</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <link rel="stylesheet" href="src/css/index.css">
+
+</head>
+<body>
+<!-- Header Section -->
+<div id="header">
+    <div class="container">
+        <!-- Navigation Bar -->
+        <div class="row align-items-center">
+            <!-- Logo Column -->
+            <div class="col-md-4 d-flex justify-content-start">
+                <img src="logo.png" alt="Logo" height="50">
+            </div>
+
+            <!-- Navigation Items (Centered) -->
+            <div class="col-md-4 d-flex justify-content-center nav_items">
+                <p class="mx-3 active">HOME</p>
+                <p class="mx-3">DISCOVER</p>
+                <p class="mx-3">NEW</p>
+                <p class="mx-3">EVENTS</p>
+                <p class="mx-3">BLOG</p>
+            </div>
+
+            <!-- Account Buttons (Right Side) -->
+            <div class="col-md-4 d-flex justify-content-end">
+                <button class="btn btn-light me-2">SIGN IN</button>
+                <button class="btn btn-outline-light">SIGN UP</button>
+            </div>
+        </div>
+        <!-- Hero Section -->
+        <div class="row hero">
+        
+            <!-- Left Column: Text Content -->
+            <div style="margin: auto;" class="col-md-6">
+                <!-- Hero Main Text -->
+                <p class="hero_text">
+                    DISCOVER A NEW <br> <span>Y</span>OU
+                </p>
+
+                <!-- Hero Subtext (Description) -->
+                <p class="hero-subtext">
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. 
+                    Aliquid corrupti voluptates, minima ex accusamus placeat iure minus doloribus itaque. 
+                    Suscipit est.
+                </p>
+
+                <br>
+
+                <!-- Category Navigation (Options for different sections) -->
+                <div class="d-flex cat">
+                    <p class="mx-3 active">ART</p>
+                    <p class="mx-3 active">GAME</p>
+                    <p class="mx-3 active">MUSIC</p>
+                    <p class="mx-3 active">MOVIE</p>
+                    <p class="mx-3 active">ENTERTAINMENT</p> <!-- Fixed spelling mistake -->
+                </div>
+            </div>
+
+            <!-- Right Column: Images -->
+            <div class="col-md-6 hero-img row">
+            
+                <!-- First Image with Rounded Borders -->
+                <img 
+                    style="border-top-left-radius: 30%; border-bottom-right-radius: 30%;" 
+                    src="src/img/rear-view-large-group-music-fans-front-stage-music-concert-by-night-copy-space.jpg" 
+                    alt="Music Concert Audience"
+                >
+
+                <!-- Second Image with Different Rounded Borders -->
+                <img 
+                    style="margin-top: 5vh; border-top-right-radius: 30%; border-bottom-left-radius: 30%;" 
+                    src="src/img/woman-crowd-taking-picture-stage-music-festival.jpg" 
+                    alt="Woman Taking Picture at Music Festival"
+                >
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- SEARCH SECTION -->
+<div class="search container">
+    <form class="row gx-2 gy-3 align-items-center" action="" method="post">
+        
+        <!-- 🔍 Search by Name -->
+        <div class="col-md-3">
+            <input type="text" class="form-control" placeholder="Search by Name">
+        </div>
+
+        <!-- 📍 Location Dropdown -->
+        <div class="col-md-2">
+            <div class="dropdown w-100">
+                <button class="btn btn-light dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                    Location
+                </button>
+                <ul class="dropdown-menu w-100">
+                    <li><a class="dropdown-item" href="#">New York</a></li>
+                    <li><a class="dropdown-item" href="#">Los Angeles</a></li>
+                    <li><a class="dropdown-item" href="#">Sydney</a></li>
+                    <li><a class="dropdown-item" href="#">London</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 🎭 Category Dropdown -->
+        <div class="col-md-2">
+            <div class="dropdown w-100">
+                <button class="btn btn-light dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                    Category
+                </button>
+                <ul class="dropdown-menu w-100">
+                    <li><a class="dropdown-item" href="#">Music</a></li>
+                    <li><a class="dropdown-item" href="#">Art</a></li>
+                    <li><a class="dropdown-item" href="#">Movies</a></li>
+                    <li><a class="dropdown-item" href="#">Entertainment</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 👥 Guest Number Input -->
+        <div class="col-md-2">
+            <input type="number" class="form-control" placeholder="Guests" min="1">
+        </div>
+
+        <!-- 🚀 Submit Button -->
+        <div class="col-md-3">
+            <button class="btn btn-primary w-100 submit-btn" type="submit">Search</button>
+        </div>
+
+    </form>
+</div>
+
+<!-- Upcoming -->
+ <div class="upcoming-event container">
+    <p class="headline">UPCOMING <span>E</span>VENTS</p>
+    <div class="row">
+        <div class="card col-md-4">
+            <div class="img position-relative">
+                <!-- Love (Heart) Icon (Left) -->
+                <i class="fas fa-heart position-absolute bottom-0 start-0 m-3 text-white p-2 rounded-circle border border-white"></i>
+                
+                <!-- Share Icon (Right) -->
+                <i class="fas fa-share-alt position-absolute bottom-0 end-0 m-3 text-white p-2 rounded-circle border border-white"></i>
+                <img src="src/img/rear-view-large-group-music-fans-front-stage-music-concert-by-night-copy-space.jpg" 
+                     class="card-img-top" alt="Event Image">
+            </div>
+            <div class="content row">
+                <p class="headline h5 font-weight-bold">THE Title Of The Event</p>
+        
+                <div class="col-md-5">
+                    <p class="location">
+                        <span><i class="fas fa-map-marker-alt"></i> </span>
+                        Sydney
+                    </p>
+                    <p class="price">
+                        <span><i class="fas fa-dollar-sign"></i> </span>
+                        60/P
+                    </p>
+                </div>
+        
+                <div class="col-md-7 text-end">
+                    <p class="date">
+                        <span><i class="fas fa-calendar-alt"></i></span>
+                         12th April 2025
+                    </p>
+                    <p class="time">
+                        <span><i class="fas fa-clock"></i> </span>
+                        6:00 PM
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="card col-md-4">
+            <div class="img position-relative">
+                <!-- Love (Heart) Icon (Left) -->
+                <i class="fas fa-heart position-absolute bottom-0 start-0 m-3 text-white p-2 rounded-circle border border-white"></i>
+                
+                <!-- Share Icon (Right) -->
+                <i class="fas fa-share-alt position-absolute bottom-0 end-0 m-3 text-white p-2 rounded-circle border border-white"></i>
+                <img src="src/img/rear-view-large-group-music-fans-front-stage-music-concert-by-night-copy-space.jpg" 
+                     class="card-img-top" alt="Event Image">
+            </div>
+            <div class="content row">
+                <p class="headline h5 font-weight-bold">THE Title Of The Event</p>
+        
+                <div class="col-md-5">
+                    <p class="location">
+                        <span><i class="fas fa-map-marker-alt"></i> </span>
+                        Sydney
+                    </p>
+                    <p class="price">
+                        <span><i class="fas fa-dollar-sign"></i> </span>
+                        60/P
+                    </p>
+                </div>
+        
+                <div class="col-md-7 text-end">
+                    <p class="date">
+                        <span><i class="fas fa-calendar-alt"></i></span>
+                         12th April 2025
+                    </p>
+                    <p class="time">
+                        <span><i class="fas fa-clock"></i> </span>
+                        6:00 PM
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="card col-md-4">
+            <div class="img position-relative">
+                <!-- Love (Heart) Icon (Left) -->
+                <i class="fas fa-heart position-absolute bottom-0 start-0 m-3 text-white p-2 rounded-circle border border-white"></i>
+                
+                <!-- Share Icon (Right) -->
+                <i class="fas fa-share-alt position-absolute bottom-0 end-0 m-3 text-white p-2 rounded-circle border border-white"></i>
+                <img src="src/img/rear-view-large-group-music-fans-front-stage-music-concert-by-night-copy-space.jpg" 
+                     class="card-img-top" alt="Event Image">
+            </div>
+            <div class="content row">
+                <p class="headline h5 font-weight-bold">THE Title Of The Event</p>
+        
+                <div class="col-md-5">
+                    <p class="location">
+                        <span><i class="fas fa-map-marker-alt"></i> </span>
+                        Sydney
+                    </p>
+                    <p class="price">
+                        <span><i class="fas fa-dollar-sign"></i> </span>
+                        60/P
+                    </p>
+                </div>
+        
+                <div class="col-md-7 text-end">
+                    <p class="date">
+                        <span><i class="fas fa-calendar-alt"></i></span>
+                         12th April 2025
+                    </p>
+                    <p class="time">
+                        <span><i class="fas fa-clock"></i> </span>
+                        6:00 PM
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+ </div>
+ <!-- Email Subscription Section -->
+<div class="email-subscription container text-center my-5">
+    <h5 class="mb-3">Subscribe to Our Newsletter</h5>
+    <form class="row justify-content-center">
+        <div class="col-md-6">
+            <input type="email" class="form-control" placeholder="Enter your email address" required>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Subscribe</button>
+        </div>
+    </form>
+</div>
+
+<!-- Footer Section -->
+<footer class="text-center py-3 bg-light">
+    <p class="mb-0">&copy; 2025 Easy Booking. All Rights Reserved.</p>
+</footer>
+
+</body>
+</html>

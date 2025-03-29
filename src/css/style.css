@@ -1,0 +1,30 @@
+:root {
+    --primary-color: #283747;
+    --secondary-color: #FF7F50;
+    --text-color: #ffffff;
+    --background-color: #f2f4f4;
+  }
+
+body{
+    width: 100vw;
+    height: auto;
+    overflow-y: scroll;
+    padding: 0;
+    margin: 0;
+    background-color: ghostwhite;
+}
+.headline{
+  font-size: 2rem;
+  font-weight: 700;
+}
+.headline span{
+  color: var(--secondary-color);
+}
+.card .headline{
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.card span{
+  color: var(--primary-color);
+}
