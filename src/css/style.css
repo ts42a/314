@@ -23,9 +23,12 @@ footer, .navbar{
 }
 .navbar .active{
     color: var(--text-color) !important;
+    font-weight: 700 !important;
 }
 .navbar .nav-link{
     color: rgba(255, 255, 255, 0.25);
+    padding: 0 5px !important;
+    margin: 0 10PX !important;
 }
 span{
     color: var(--secondary-color);
