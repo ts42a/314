@@ -13,7 +13,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 # -----------------------
-# DATABASE MODEL
+# DATABASE MODELS
 # -----------------------
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,6 +26,21 @@ class User(UserMixin, db.Model):
     dob = db.Column(db.String(50))   # for users
     abn = db.Column(db.String(50))   # for organizers
 
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    date = db.Column(db.String(100), nullable=False)
+    time = db.Column(db.String(100), nullable=False)
+    location = db.Column(db.String(200), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    capacity = db.Column(db.Integer, nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    image_url = db.Column(db.String(300))
+    organizer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    organizer = db.relationship('User', backref='events')
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -33,7 +48,6 @@ def load_user(user_id):
 # -----------------------
 # ROUTES
 # -----------------------
-
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -45,7 +59,6 @@ def signup():
     password = request.form['password']
     confirm_password = request.form['confirm_password']
     user_type = request.form.get('type', 'user')
-
     phone = request.form.get('phone')
     address = request.form.get('address')
     abn = request.form.get('abn') if user_type == 'organizer' else None
@@ -60,17 +73,7 @@ def signup():
         return redirect(url_for('home'))
 
     hashed_password = generate_password_hash(password)
-
-    new_user = User(
-        name=name,
-        email=email,
-        password=hashed_password,
-        role=user_type,
-        phone=phone,
-        address=address,
-        abn=abn,
-        dob=dob
-    )
+    new_user = User(name=name, email=email, password=hashed_password, role=user_type, phone=phone, address=address, abn=abn, dob=dob)
     db.session.add(new_user)
     db.session.commit()
     login_user(new_user)
@@ -84,7 +87,6 @@ def login():
     user_type = request.form.get('type', 'user')
 
     user = User.query.filter_by(email=email).first()
-
     if not user:
         flash("No account found with that email.", "signin")
         return redirect(url_for('home'))
@@ -121,6 +123,59 @@ def account():
     {'<p>Date of Birth: ' + current_user.dob + '</p>' if current_user.role == 'user' else ''}
     <a href="/logout">Logout</a>
     """
+
+@app.route('/launch_event', methods=['GET', 'POST'])
+@login_required
+def launch_event():
+    if current_user.role != 'organizer':
+        flash("You must be an organizer to create events.", "signin")
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        event_type = request.form.get('event_type')
+
+        # Validation
+        if event_type == 'multi':
+            required_fields = ['date_start', 'date_end', 'time_start', 'time_end']
+        else:
+            required_fields = ['date_single', 'time_single']
+        
+        for field in required_fields:
+            if not request.form.get(field):
+                flash("Please fill out all required date and time fields.", "signup")
+                return redirect(url_for('launch_event'))
+
+        # Parse date and time
+        if event_type == 'multi':
+            date = f"{request.form['date_start']} to {request.form['date_end']}"
+            time = f"{request.form['time_start']} - {request.form['time_end']}"
+        else:
+            date = request.form['date_single']
+            time = request.form['time_single']
+
+        event = Event(
+            title=request.form['title'],
+            description=request.form['description'],
+            date=date,
+            time=time,
+            location=request.form['location'],
+            price=float(request.form['price']),
+            capacity=int(request.form['capacity']),
+            category=request.form['category'],
+            image_url=request.form.get('image_url'),
+            organizer_id=current_user.id
+        )
+        db.session.add(event)
+        db.session.commit()
+        flash("Event created successfully!", "success")
+        return redirect(url_for('event_page', event_id=event.id))
+
+    return render_template('lunch_event.html')
+
+@app.route('/event/<int:event_id>')
+def event_page(event_id):
+    event = Event.query.get_or_404(event_id)
+    return render_template('event.html', event=event)
 
 # -----------------------
 # RUN

@@ -46,7 +46,11 @@
             or simply looking for exciting events to attend, we've got you covered.  
             Enjoy a smooth booking experience with just a few clicks.</p>
             <div class="d-flex justify-content-center gap-3">
-                <button class="btn btn-primary btn-hover" data-bs-toggle="modal" data-bs-target="#launchEventModal">Launch Event</button>
+                {% if current_user.is_authenticated and current_user.role == 'organizer' %}
+                <a class="btn btn-outline-light" href="/launch_event">LAUNCH EVENT</a>
+                {% else %}
+                <button class="btn btn-outline-light" onclick="openSignInModal()">LAUNCH EVENT</button>
+                {% endif %}                
                 <button class="btn btn-secondary btn-hover" data-bs-toggle="modal" data-bs-target="#bookEventModal">Book Event</button>
             </div>
     </div>
@@ -243,21 +247,22 @@
                     {% with messages = get_flashed_messages(with_categories=true) %}
                     {% for category, message in messages %}
                         {% if category == 'signin' %}
-                        <div class="alert alert-danger mb-0 rounded-0 text-center" id="signin-error">
+                        <div class="alert {{ 'alert-success' if 'successfully' in message.lower() else 'alert-danger' }} mb-0 rounded-0 text-center" id="signin-error">
                             {{ message }}
-                            <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="hideSigninError()">Back</button>
+                            <button type="button" class="btn btn-outline-{{ 'success' if 'successfully' in message.lower() else 'danger' }} btn-sm mt-2" onclick="hideSigninError()">Back</button>
                         </div>
                         <script>
                             document.addEventListener("DOMContentLoaded", function () {
-                            const modal = new bootstrap.Modal(document.getElementById('signInModal'));
-                            modal.show();
-                            document.getElementById("userSignInForm").style.display = "none";
-                            document.getElementById("organizerSignInForm").style.display = "none";
+                                const modal = new bootstrap.Modal(document.getElementById('signInModal'));
+                                modal.show();
+                                document.getElementById("userSignInForm").style.display = "none";
+                                document.getElementById("organizerSignInForm").style.display = "none";
                             });
                         </script>
                         {% endif %}
                     {% endfor %}
                     {% endwith %}
+
                 </div>
             </div>
         </div>
@@ -285,22 +290,21 @@
                     {% with messages = get_flashed_messages(with_categories=true) %}
                     {% for category, message in messages %}
                         {% if category == 'signup' %}
-                        <div class="alert alert-danger mb-0 rounded-0 text-center" id="signup-error">
+                        <div class="alert {{ 'alert-success' if 'success' in message.lower() else 'alert-danger' }} mb-0 rounded-0 text-center" id="signup-error">
                             {{ message }}
-                            <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="hideSignupError()">Back</button>
+                            <button type="button" class="btn btn-outline-{{ 'success' if 'success' in message.lower() else 'danger' }} btn-sm mt-2" onclick="hideSignupError()">Back</button>
                         </div>
                         <script>
                             document.addEventListener("DOMContentLoaded", function () {
-                            const modal = new bootstrap.Modal(document.getElementById('signupModal'));
-                            modal.show();
-                            document.getElementById("userSignUpForm").style.display = "none";
-                            document.getElementById("organizerSignUpForm").style.display = "none";
+                                const modal = new bootstrap.Modal(document.getElementById('signupModal'));
+                                modal.show();
+                                document.getElementById("userSignUpForm").style.display = "none";
+                                document.getElementById("organizerSignUpForm").style.display = "none";
                             });
                         </script>
                         {% endif %}
                     {% endfor %}
                     {% endwith %}
-
                 </p>
 
                 <!-- User Sign Up Form (Default Visible) -->
@@ -355,6 +359,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script src="../static/fuc/account.js"></script>
+<script src="../static/fuc/modalHandlers.js"></script>
 
 </body>
 </html>

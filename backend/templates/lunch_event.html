@@ -2,21 +2,157 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Launch Event</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+
+    <style>
+        .launch_event_form {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 10vh;
+        }
+    </style>
 </head>
+
+
 <body>
-    <div class="container mt-5">
-        <h2 class="text-center mb-4">Create a Lunch Event</h2>
-        <form method="POST">
-            <input class="form-control mb-3" name="title" placeholder="Event Title" required>
-            <textarea class="form-control mb-3" name="description" placeholder="Description" required></textarea>
-            <input class="form-control mb-3" name="location" placeholder="Location" required>
-            <input class="form-control mb-3" type="date" name="date" required>
-            <input class="form-control mb-3" type="number" step="0.01" name="price" placeholder="Price" required>
-            <input class="form-control mb-3" type="number" name="guests_limit" placeholder="Max Guests" required>
-            <button class="btn btn-primary w-100" type="submit">Create Event</button>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg padding_y">
+        <a class="navbar-brand" href="#">    
+            <img alt="LOGO" style="width: 50%;" src="{{ url_for('static', filename='img/logo-w.svg') }}">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mx-auto">
+                <li class="nav-item"><a class="nav-link" href="/">HOME</a></li>
+                <li class="nav-item"><a class="nav-link" href="/discover">DISCOVER</a></li>
+                <li class="nav-item"><a class="nav-link" href="/news">NEWS</a></li>
+                <li class="nav-item"><a class="nav-link" href="/about_us">ABOUT US</a></li>
+                <li class="nav-item"><a class="nav-link" href="/contact">BLOGS</a></li>
+            </ul>
+            <div>
+                {% if current_user.is_authenticated %}
+                <a class="btn btn-outline-light" href="/account">ACCOUNT</a>
+                {% else %}
+                <button class="btn btn-light me-2" data-bs-toggle="modal" data-bs-target="#signInModal">SIGN IN</button>
+                <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#signupModal">SIGN UP</button>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Launch Event Form -->
+    <div class="container launch_event_form py-5">
+        <div class="text-center mb-4">
+            <h2>Launch Your Event</h2>
+            <p class="text-muted">Fill in the details below to bring your event to life. We'll handle the rest!</p>
+        </div>
+        <form method="POST" action="/launch_event">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <input type="text" placeholder="Title of the event" class="form-control" name="title" required>
+                    </div>
+
+                    <!-- Event Type & Schedule -->
+                    <div class="mb-3">
+                        <label class="form-label d-block">Event Type</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="event_type" id="eventTypeSingle" value="single" checked onclick="toggleDateTimeFields()">
+                            <label class="form-check-label" for="eventTypeSingle">Single-Day</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="event_type" id="eventTypeMulti" value="multi" onclick="toggleDateTimeFields()">
+                            <label class="form-check-label" for="eventTypeMulti">Multi-Day</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <textarea class="form-control" placeholder="Description" name="description" rows="4" required></textarea>
+                    </div>
+                </div>
+            </div>
+
+
+<!-- Single-Day: Date & Time inline -->
+<div id="singleDayFields" class="row mb-3">
+    <div class="col-md-6">
+        <input type="date" class="form-control" name="date_single" placeholder="Date">
+    </div>
+    <div class="col-md-6">
+        <input type="time" class="form-control" name="time_single" placeholder="Time">
+    </div>
+</div>
+
+<!-- Multi-Day: Start/End Date & Time inline -->
+<div id="multiDayFields" class="row mb-3" style="display: none;">
+    <div class="col-md-3">
+        <input type="date" class="form-control" name="date_start" placeholder="Start Date">
+    </div>
+    <div class="col-md-3">
+        <input type="time" class="form-control" name="time_start" placeholder="Start Time">
+    </div>
+    <div class="col-md-3">
+        <input type="date" class="form-control" name="date_end" placeholder="End Date">
+    </div>
+    <div class="col-md-3">
+        <input type="time" class="form-control" name="time_end" placeholder="End Time">
+    </div>
+</div>
+
+
+            <div class="row mb-3 mt-4">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" name="location" placeholder="Location" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" step="0.01" class="form-control" name="price" placeholder="Ticket Price ($)" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control" name="capacity" placeholder="Capacity" required>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="category" required>
+                        <option value="" disabled selected>Category</option>
+                        <option value="Music">Music</option>
+                        <option value="Tech">Tech</option>
+                        <option value="Food">Food</option>
+                        <option value="Art">Art</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <input type="url" placeholder="Event Image URL" class="form-control" name="image_url">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-success">Launch Event</button>
+                </div>                
+            </div>
         </form>
     </div>
+
+    <!-- JavaScript -->
+    <script>
+        function toggleDateTimeFields() {
+            const isMulti = document.getElementById('eventTypeMulti').checked;
+            document.getElementById("singleDayFields").style.display = isMulti ? 'none' : 'flex';
+            document.getElementById("multiDayFields").style.display = isMulti ? 'flex' : 'none';
+        }
+
+        document.addEventListener("DOMContentLoaded", toggleDateTimeFields);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
