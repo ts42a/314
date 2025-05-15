@@ -1,0 +1,18 @@
+# Pycharm jetbrains
+.idea/
+
+# Virtual environment
+venv/
+env/
+
+# npm / yarn
+node_modules/
+
+# Static build files (if applicable)
+dist/
+build/
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.sqlite3
