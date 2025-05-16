@@ -66,176 +66,80 @@
   </div>
 </nav>
 
-    <!-- Hero Section -->
-<div class="hero row justify-content-center align-items-center text-left py-5 padding_y">
-    <div class="col-md-6">
-        <h1 class="hero-title">Seamless Event <span>Booking,</span> Simplified for You</h1>
-        <p class="hero-text">Plan, launch, and book events effortlessly with our intuitive platform.  
-            Whether you're organizing a grand celebration, a corporate gathering,  
-            or simply looking for exciting events to attend, we've got you covered.  
-            Enjoy a smooth booking experience with just a few clicks.</p>
-            <div class="d-flex justify-content-center gap-3">
-                {% if current_user.is_authenticated and current_user.role == 'organizer' %}
-                <a class="btn btn-outline-light" href="/launch_event">LAUNCH EVENT</a>
-                {% else %}
-                <button class="btn btn-outline-light" onclick="openSignInModal()">LAUNCH EVENT</button>
-                {% endif %}                
-                <button class="btn btn-secondary btn-hover" data-bs-toggle="modal" data-bs-target="#bookEventModal">Book Event</button>
-            </div>
+    <!-- Discover Header -->
+    <div class="container text-center py-5">
+        <h1 class="hero-title">Discover Your Next <span>Event</span></h1>
+        <p class="hero-text">Search and explore thousands of events in your city and beyond. Filter by name, location, category, and attendees to find exactly what you're looking for.</p>
     </div>
-    <div class="col-md-6 mt-4">
-        <img style="width: 80%;" src="{{ url_for('static', filename='img/undraw_happy-music_na4p.svg') }}" alt="Event Booking">
-    </div>
-</div>
-</br>
-</br>
 
     <!-- SEARCH SECTION -->
-    <div class=" search container py-4">
-        <form class="row g-2 align-items-center">
-            <div class="col-md-3"><input type="text" class="form-control" placeholder="Search by Name"></div>
+    <div class="search container py-4">
+        <form class="row g-2 align-items-center" method="GET" action="{{ url_for('discover') }}">
+            <div class="col-md-3">
+<input type="text" name="title" value="{{ request.args.get('title','') }}" class="form-control" placeholder="Search by Title">
+            </div>
             <div class="col-md-2">
-                <select class="form-select">
-                    <option selected>Location</option>
-                    <option>New York</option>
-                    <option>Los Angeles</option>
-                    <option>Sydney</option>
-                    <option>London</option>
+                <select name="location" class="form-select">
+                    <option value="" {% if not request.args.get('location') %}selected{% endif %}>Location</option>
+                    {% for loc in ['New York','Los Angeles','Sydney','London'] %}
+                    <option value="{{ loc }}" {% if request.args.get('location')==loc %}selected{% endif %}>{{ loc }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
-                <select class="form-select">
-                    <option selected>Category</option>
-                    <option>Music</option>
-                    <option>Art</option>
-                    <option>Movies</option>
-                    <option>Entertainment</option>
+                <select name="category" class="form-select">
+                    <option value="" {% if not request.args.get('category') %}selected{% endif %}>Category</option>
+                    {% for cat in ['Music','Art','Movies','Entertainment'] %}
+                    <option value="{{ cat }}" {% if request.args.get('category')==cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2"><input type="number" class="form-control" placeholder="Guests" min="1"></div>
-            <div class="col-md-3"><button class="btn btn-primary w-100" type="submit">Search</button></div>
+            <div class="col-md-2">
+                <input type="number" name="guests" value="{{ request.args.get('guests','') }}" class="form-control" placeholder="Guests" min="1">
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary w-100" type="submit">Search</button>
+            </div>
         </form>
     </div>
 
-<!-- Upcoming Events -->
-<div class="container upcoming py-4">
-    <h2 class="text-center mb-4">Upcoming <span>E</span>vents</h2>
-    <div class="row">
-        <!-- Event 1 -->
-        <div class="col-md-4">
-            <div class="card">
-                <img style="height: 200px;" src="src/img/event/images (1).jpeg" class="card-img-top" alt="Music Concert">
-                <div class="card-body">
-                    <h5 class="card-title">Live Music Concert</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><i class="fas fa-map-marker-alt"></i> Sydney</p>
-                            <p><i class="fas fa-dollar-sign"></i> $60/P</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><i class="fas fa-users"></i> 500 Guests</p>
-                            <p><i class="fas fa-star"></i> 4.7/5</p>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <a href="#" class="btn">Book Now</a>
-                        <div class="d-flex gap-3">
-                            <a href="#" class="text-dark"><i class="fas fa-heart"></i></a>
-                            <a href="#" class="text-dark"><i class="fas fa-share-alt"></i></a>
-                        </div>
-                    </div>
-                    
-                </div>
-            </div>
-        </div>
-
-        <!-- Event 2 -->
-        <div class="col-md-4">
-            <div class="card">
-                <img style="height: 200px;" src="src/img/event/techsummit.jpg" class="card-img-top" alt="Tech Summit">
-                <div class="card-body">
-                    <h5 class="card-title">Tech Innovation Summit</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><i class="fas fa-map-marker-alt"></i> Melbourne</p>
-                            <p><i class="fas fa-dollar-sign"></i> $100/P</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><i class="fas fa-users"></i> 300 Guests</p>
-                            <p><i class="fas fa-star"></i> 4.9/5</p>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <a href="#" class="btn">Book Now</a>
-                        <div class="d-flex gap-3">
-                            <a href="#" class="text-dark"><i class="fas fa-heart"></i></a>
-                            <a href="#" class="text-dark"><i class="fas fa-share-alt"></i></a>
+    <!-- Search Results -->
+    <div class="container search-results py-5">
+        <h2 class="text-center mb-4">Search Results</h2>
+        {% if events %}
+        <div class="row">
+            {% for event in events %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <img src="{{ url_for('static', filename=event.image) }}" class="card-img-top" alt="Event Image" style="height: 200px; object-fit: cover;">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ event.title }}</h5>
+                        <p class="mb-1"><i class="fas fa-map-marker-alt"></i> {{ event.location }}</p>
+                        <p class="mb-1"><i class="fas fa-dollar-sign"></i> {{ event.price }} / P</p>
+                        <p class="mb-1"><i class="fas fa-users"></i> {{ event.max_guests }} Guests</p>
+                        <p class="mb-3"><i class="fas fa-star"></i> {{ event.rating }} / 5</p>
+                        <div class="mt-auto d-flex justify-content-between align-items-center">
+                             <a href="{{ url_for('event_page', event_id=event.id) }}" class="btn btn-secondary btn-sm">Book Now</a>
+                            <div class="d-flex gap-3">
+                                <a href="#" class="text-dark"><i class="fas fa-heart"></i></a>
+                                <a href="#" class="text-dark"><i class="fas fa-share-alt"></i></a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-
-        <!-- Event 3 -->
-        <div class="col-md-4">
-            <div class="card">
-                <img style="height: 200px;" src="src/img/event/foodfestival.jpg" class="card-img-top" alt="Food Festival">
-                <div class="card-body">
-                    <h5 class="card-title">Gourmet Food Festival</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><i class="fas fa-map-marker-alt"></i> Brisbane</p>
-                            <p><i class="fas fa-dollar-sign"></i> $30/P</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><i class="fas fa-users"></i> 200 Guests</p>
-                            <p><i class="fas fa-star"></i> 4.6/5</p>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <a href="#" class="btn">Book Now</a>
-                        <div class="d-flex gap-3">
-                            <a href="#" class="text-dark"><i class="fas fa-heart"></i></a>
-                            <a href="#" class="text-dark"><i class="fas fa-share-alt"></i></a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% else %}
+        <div class="alert alert-warning text-center">No events found matching your criteria.</div>
+        {% endif %}
     </div>
-</div>
-
-<!-- Events Near You Section -->
-<div class="container nearbyevents py-5">
-    <h2 class="text-center mb-4">Events <span>Near You</span></h2>
-    
-    <!-- Banner -->
-    <div class="card text-white border-0 shadow-lg position-relative overflow-hidden">
-        <img src="src/img/event/banner.jpg" class="card-img" alt="Events Near You" style="height: 350px; object-fit: cover;">
-        <div class="card-img-overlay d-flex flex-column justify-content-center text-center bg-dark bg-opacity-50">
-            <h3 class="fw-bold">Discover Exciting Events in Your City</h3>
-            <p class="fs-5">Find concerts, festivals, meetups, and more happening near you.</p>
-            <a href="#" class="btn btn-light btn-lg mt-3">Explore Events</a>
-        </div>
-    </div>
-</div>
-
-<!-- Email Subscription Section -->
-<div class="container email-sub py-5">
-        <h3 class="fw-bold">Stay Updated with Upcoming Events!</h3>
-        <p>Subscribe to get the latest event updates straight to your inbox.</p>
-        <div class="d-flex justify-content-center mt-3">
-            <input type="email" class="form-control w-50 rounded-start" placeholder="Enter your email" required>
-            <button class="btn rounded-end px-4">Subscribe</button>
-        </div>
-</div>
-
-
 
     <!-- Footer -->
     <footer class="bg-dark text-white text-center py-3">
         <p>&copy; 2025 Easy Booking. All Rights Reserved.</p>
     </footer>
+
 <!-- Sign In Modal -->
 <div class="modal fade" id="signInModal" tabindex="-1" aria-labelledby="signInModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -384,11 +288,8 @@
 </div>
 
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<script src="../static/fuc/account.js"></script>
-<script src="../static/fuc/modalHandlers.js"></script>
-
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/fun/account.js"></script>
 </body>
 </html>

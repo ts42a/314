@@ -87,6 +87,43 @@ def load_user(user_id):
 def home():
     return render_template('index.html')
 
+
+@app.route('/discover')
+def discover():
+    q = Event.query
+    title = request.args.get('title', '').strip()
+    loc   = request.args.get('location', '')
+    cat   = request.args.get('category', '')
+    guests = request.args.get('guests', type=int)
+
+    # filter on Event.title to match your template
+    if title:
+        q = q.filter(Event.title.ilike(f'%{title}%'))
+    if loc:
+        q = q.filter_by(location=loc)
+    if cat:
+        q = q.filter_by(category=cat)
+    if guests:
+        q = q.filter(Event.max_guests >= guests)
+
+    events = q.all()
+    return render_template('discover.html', events=events)
+
+
+
+@app.route('/news')
+def news():
+    return render_template('news.html')
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/blogs')
+def blogs():
+    return render_template('blogs.html')
+
+
 @app.route('/signup', methods=['POST'])
 def signup():
     name    = request.form['name']
