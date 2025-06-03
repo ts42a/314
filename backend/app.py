@@ -8,7 +8,14 @@ from urllib.parse import quote
 from datetime import datetime, timedelta
 import os
 
-from backend.models import db, User, Event, Booking, Transaction
+try:
+    from backend.models import db, User, Event, Booking, Transaction
+except ModuleNotFoundError:
+    try:
+        from models import db, User, Event, Booking, Transaction
+    except ModuleNotFoundError as e:
+        print("Error: Could not import 'backend.models' or fallback 'models'.")
+        raise SystemExit("Fatal: Required models module not found. Exiting.")
 
 app = Flask(__name__)
 # app.config['SECRET_KEY'] = 'your_secret_key_here'
