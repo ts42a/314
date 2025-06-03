@@ -8,7 +8,7 @@ from urllib.parse import quote
 from datetime import datetime, timedelta
 import os
 
-from backend.models import db, User, Event, Booking, Transaction
+from models import db, User, Event, Booking, Transaction
 
 app = Flask(__name__)
 # app.config['SECRET_KEY'] = 'your_secret_key_here'

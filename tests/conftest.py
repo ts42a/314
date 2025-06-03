@@ -3,8 +3,8 @@ import tempfile
 import pytest
 
 # Import the Flask `app` and the models from backend
-from backend.app import app as flask_app
-from backend.models import db, User, Event, Booking, Transaction
+from app import app as flask_app
+from models import db, User, Event, Booking, Transaction
 
 @pytest.fixture()
 def app():
