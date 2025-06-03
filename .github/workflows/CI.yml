@@ -1,51 +1,27 @@
-name: CI Tests
+name: unittest
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+on: [push, pull_request]
 
 jobs:
-  test:
+  pytest:
     runs-on: ubuntu-latest
-
+    env:
+      FLASK_APP: app.py           
+      SECRET_KEY: secret_key
     steps:
-      # Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Set up Python for backend tests
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: 3.11
 
-      # Set up Node.js for frontend testing
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      # Install backend dependencies (Flask/Django + DB drivers)
-      - name: Install Python dependencies
+      - name: Install deps
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest
 
-      # Run API and DB tests using SQLite (in-memory)
-      - name: Run API and DB tests
-        run: |
-#          pytest tests/api/       # API endpoint testing
- #         pytest tests/db/        # DB-related logic (using SQLite or mocks)
-          
-	# Install frontend dependencies
-      - name: Install Node.js dependencies
-         run: |
-#          cd frontend
- #         npm install
+      - name: Run unit tests
+        run: pytest -v
 
-      # Run JavaScript frontend tests (e.g., Jest, Vitest, etc.)
-      - name: Run Frontend JS Tests
-        run: |
-#          cd frontend
-#          npm test
