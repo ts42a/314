@@ -1,21 +1,71 @@
+from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 
+# ─── The ONE global SQLAlchemy() instance ────────────────────────────────────
 db = SQLAlchemy()
 
-class Organizer(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
-    events = db.relationship('Event', backref='organizer', lazy=True)
+# ─── The single User model (used for both regular users and organizers) ───────
+class User(UserMixin, db.Model):
+    __tablename__ = "user"
 
+    id              = db.Column(db.Integer, primary_key=True)
+    name            = db.Column(db.String(100), nullable=False)
+    email           = db.Column(db.String(100), unique=True, nullable=False)
+    password        = db.Column(db.String(200), nullable=False)
+    role            = db.Column(db.String(20),  nullable=False)   # either "user" or "organizer"
+    phone           = db.Column(db.String(20))
+    address         = db.Column(db.String(200))
+    dob             = db.Column(db.String(50))
+    abn             = db.Column(db.String(50))
+    bank_name       = db.Column(db.String(200))
+    account_number  = db.Column(db.String(100))
+    routing_number  = db.Column(db.String(100))
+
+    # If this User is an organizer, this relationship points at their events.
+    events = db.relationship("Event", backref="organizer", lazy=True)
+
+# ─── The single Event model (linked to User via organizer_id) ───────────────
 class Event(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(120), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    location = db.Column(db.String(100), nullable=False)
-    date = db.Column(db.String(50), nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    guests_limit = db.Column(db.Integer, nullable=False)
-    organizer_id = db.Column(db.Integer, db.ForeignKey('organizer.id'), nullable=False)
+    __tablename__ = "event"
+
+    id            = db.Column(db.Integer, primary_key=True)
+    title         = db.Column(db.String(120), nullable=False)
+    description   = db.Column(db.Text, nullable=False)
+    location      = db.Column(db.String(100), nullable=False)
+    date          = db.Column(db.String(50),  nullable=False)   # e.g. "YYYY-MM-DD"
+    price         = db.Column(db.Float,       nullable=False)
+    guests_limit  = db.Column(db.Integer,     nullable=False)
+    organizer_id  = db.Column(db.Integer,     db.ForeignKey("user.id"), nullable=False)
+
+    # You can compute tickets_sold via the bookings relationship:
+    @property
+    def tickets_sold(self):
+        return sum(b.tickets_qty for b in self.bookings)
+
+    # Backrefs:
+    bookings      = db.relationship("Booking",    backref="event",      lazy="dynamic")
+    transactions  = db.relationship("Transaction", backref="event",      lazy="dynamic")
+
+# ─── Booking ties a customer into an Event ────────────────────────────────────
+class Booking(db.Model):
+    __tablename__ = "booking"
+
+    id             = db.Column(db.Integer, primary_key=True)
+    event_id       = db.Column(db.Integer, db.ForeignKey("event.id"), nullable=False)
+    customer_name  = db.Column(db.String(100), nullable=False)
+    customer_email = db.Column(db.String(100), nullable=False)
+    tickets_qty    = db.Column(db.Integer, default=1)
+    payment_method = db.Column(db.String(20))
+    timestamp      = db.Column(db.DateTime, default=datetime.utcnow)
+
+# ─── Transaction (for payments, cash‐outs, etc.) ─────────────────────────────
+class Transaction(db.Model):
+    __tablename__ = "transaction"
+
+    id               = db.Column(db.Integer, primary_key=True)
+    event_id         = db.Column(db.Integer, db.ForeignKey("event.id"), nullable=True)
+    amount           = db.Column(db.Float, nullable=False, default=0.0)
+    date             = db.Column(db.Date,  default=datetime.utcnow)
+    status           = db.Column(db.String(50), nullable=False)
+    cash_out_amount  = db.Column(db.Float, nullable=True)

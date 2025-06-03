@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     LoginManager, login_user, logout_user,
     login_required, current_user, UserMixin
@@ -7,75 +6,21 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import quote
 from datetime import datetime, timedelta
+import os
+
+from backend.models import db, User, Event, Booking, Transaction
 
 app = Flask(__name__)
 # app.config['SECRET_KEY'] = 'your_secret_key_here'
-app.config['SECRET_KEY'] = 'secret_key'
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "secret_key")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
+db.init_app(app) # bind db obj from models.py
+
 login_manager = LoginManager(app)
 login_manager.login_view = 'home'
-
-# -----------------------
-# MODELS
-# -----------------------
-class User(UserMixin, db.Model):
-    id              = db.Column(db.Integer, primary_key=True)
-    name            = db.Column(db.String(100), nullable=False)
-    email           = db.Column(db.String(100), unique=True, nullable=False)
-    password        = db.Column(db.String(200), nullable=False)
-    role            = db.Column(db.String(20), nullable=False)  # 'user' or 'organizer'
-    phone           = db.Column(db.String(20))
-    address         = db.Column(db.String(200))
-    dob             = db.Column(db.String(50))
-    abn             = db.Column(db.String(50))
-    bank_name       = db.Column(db.String(200))
-    account_number  = db.Column(db.String(100))
-    routing_number  = db.Column(db.String(100))
-
-class Event(db.Model):
-    id           = db.Column(db.Integer, primary_key=True)
-    title        = db.Column(db.String(100), nullable=False)
-    description  = db.Column(db.Text, nullable=False)
-    date         = db.Column(db.String(100), nullable=False)  # "YYYY-MM-DD"
-    time         = db.Column(db.String(100), nullable=False)  # "HH:MM"
-    location     = db.Column(db.String(200), nullable=False)
-    price        = db.Column(db.Float, nullable=False)
-    capacity     = db.Column(db.Integer, nullable=False)
-    category     = db.Column(db.String(50), nullable=False)
-    image_url    = db.Column(db.String(300))
-    organizer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    organizer     = db.relationship('User', backref='events')
-    bookings      = db.relationship('Booking', back_populates='event', lazy='dynamic')
-    transactions  = db.relationship('Transaction', back_populates='event', lazy='dynamic')
-
-    @property
-    def tickets_sold(self):
-        return sum(b.tickets_qty for b in self.bookings)
-
-class Booking(db.Model):
-    id             = db.Column(db.Integer, primary_key=True)
-    event_id       = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
-    customer_name  = db.Column(db.String(100), nullable=False)
-    customer_email = db.Column(db.String(100), nullable=False)
-    tickets_qty    = db.Column(db.Integer, default=1)
-    payment_method = db.Column(db.String(20))
-    timestamp      = db.Column(db.DateTime, default=datetime.utcnow)
-
-    event = db.relationship('Event', back_populates='bookings')
-
-class Transaction(db.Model):
-    id               = db.Column(db.Integer, primary_key=True)
-    event_id         = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=True)
-    amount           = db.Column(db.Float, nullable=False, default=0.0)
-    date             = db.Column(db.Date, default=datetime.utcnow)
-    status           = db.Column(db.String(50), nullable=False)
-    cash_out_amount  = db.Column(db.Float, nullable=True)
-
-    event = db.relationship('Event', back_populates='transactions')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -220,7 +165,7 @@ def account():
         events=events,
         bookings=bookings,
         transactions=transactions,
-        total_earnings=total_earnings    # <<< pass it in
+        total_earnings=total_earnings   
     )
 
 
