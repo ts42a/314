@@ -1,10 +1,16 @@
-hv
+## Introduction
+This is a local web-based application.
 
-## Vercel one-click button
-[![Deploy with Vercel](https://vercel.com/button)
-](https://vercel.com/new/clone?repository-url=https://github.com/YOURNAME/YOURREPO
-&project-name=flask-events
-&repository-name=flask-events
-&env=SECRET_KEY,DATABASE_URL
-&demo-title=Event Management System)
+## Installation
+1. git clone https://github.com/ts42a/314.git
+2. cd 314
+## You can create python venv on your own preferences
+3. python -m venv .venv
+4. source .venv/bin/activate       
+5. pip install -r requirements.txt  
+
+## Run the app using
+python3 backend/app.py 
+# Or,
+python backend/app.py
 
