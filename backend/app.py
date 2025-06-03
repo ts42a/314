@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     LoginManager, login_user, logout_user,
     login_required, current_user, UserMixin
@@ -7,74 +6,21 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import quote
 from datetime import datetime, timedelta
+import os
+
+from backend.models import db, User, Event, Booking, Transaction
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key_here'
+# app.config['SECRET_KEY'] = 'your_secret_key_here'
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "secret_key")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
+db.init_app(app) # bind db obj from models.py
+
 login_manager = LoginManager(app)
 login_manager.login_view = 'home'
-
-# -----------------------
-# MODELS
-# -----------------------
-class User(UserMixin, db.Model):
-    id              = db.Column(db.Integer, primary_key=True)
-    name            = db.Column(db.String(100), nullable=False)
-    email           = db.Column(db.String(100), unique=True, nullable=False)
-    password        = db.Column(db.String(200), nullable=False)
-    role            = db.Column(db.String(20), nullable=False)  # 'user' or 'organizer'
-    phone           = db.Column(db.String(20))
-    address         = db.Column(db.String(200))
-    dob             = db.Column(db.String(50))
-    abn             = db.Column(db.String(50))
-    bank_name       = db.Column(db.String(200))
-    account_number  = db.Column(db.String(100))
-    routing_number  = db.Column(db.String(100))
-
-class Event(db.Model):
-    id           = db.Column(db.Integer, primary_key=True)
-    title        = db.Column(db.String(100), nullable=False)
-    description  = db.Column(db.Text, nullable=False)
-    date         = db.Column(db.String(100), nullable=False)  # "YYYY-MM-DD"
-    time         = db.Column(db.String(100), nullable=False)  # "HH:MM"
-    location     = db.Column(db.String(200), nullable=False)
-    price        = db.Column(db.Float, nullable=False)
-    capacity     = db.Column(db.Integer, nullable=False)
-    category     = db.Column(db.String(50), nullable=False)
-    image_url    = db.Column(db.String(300))
-    organizer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    organizer     = db.relationship('User', backref='events')
-    bookings      = db.relationship('Booking', back_populates='event', lazy='dynamic')
-    transactions  = db.relationship('Transaction', back_populates='event', lazy='dynamic')
-
-    @property
-    def tickets_sold(self):
-        return sum(b.tickets_qty for b in self.bookings)
-
-class Booking(db.Model):
-    id             = db.Column(db.Integer, primary_key=True)
-    event_id       = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
-    customer_name  = db.Column(db.String(100), nullable=False)
-    customer_email = db.Column(db.String(100), nullable=False)
-    tickets_qty    = db.Column(db.Integer, default=1)
-    payment_method = db.Column(db.String(20))
-    timestamp      = db.Column(db.DateTime, default=datetime.utcnow)
-
-    event = db.relationship('Event', back_populates='bookings')
-
-class Transaction(db.Model):
-    id               = db.Column(db.Integer, primary_key=True)
-    event_id         = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=True)
-    amount           = db.Column(db.Float, nullable=False, default=0.0)
-    date             = db.Column(db.Date, default=datetime.utcnow)
-    status           = db.Column(db.String(50), nullable=False)
-    cash_out_amount  = db.Column(db.Float, nullable=True)
-
-    event = db.relationship('Event', back_populates='transactions')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -86,7 +32,6 @@ def load_user(user_id):
 @app.route('/')
 def home():
     return render_template('index.html')
-
 
 @app.route('/discover')
 def discover():
@@ -104,7 +49,7 @@ def discover():
     if cat:
         q = q.filter_by(category=cat)
     if guests:
-        q = q.filter(Event.max_guests >= guests)
+        q = q.filter(Event.capacity >= guests)  # Fixed: changed from max_guests to capacity
 
     events = q.all()
     return render_template('discover.html', events=events)
@@ -155,19 +100,36 @@ def signup():
     flash("Signup successful!", "signup")
     return redirect(url_for('home'))
 
+
 @app.route('/login', methods=['POST'])
 def login():
+    print("=== LOGIN ATTEMPT ===")
+    print("Form data:", dict(request.form))
+
     email = request.form['email']
-    pwd   = request.form['password']
-    role  = request.form.get('type', 'user')
+    pwd = request.form['password']
+    role = request.form.get('type', 'user')
+
+    print(f"Email: {email}")
+    print(f"Password: {pwd}")
+    print(f"Role: {role}")
 
     user = User.query.filter_by(email=email).first()
+    print(f"User found: {user}")
+
+    if user:
+        print(f"User role: {user.role}")
+        print(f"Password check: {check_password_hash(user.password, pwd)}")
+
     if not user or user.role != role or not check_password_hash(user.password, pwd):
-        flash("Invalid credentials or role", "login")
+        print("LOGIN FAILED")
+        flash("Invalid credentials or role", "signin")
         return redirect(url_for('home'))
 
+    print("LOGIN SUCCESS")
     login_user(user)
-    flash("Logged in successfully!", "login")
+    flash("Logged in successfully!", "signin")
+    print("===================")
     return redirect(url_for('home'))
 
 @app.route('/logout')
@@ -203,7 +165,7 @@ def account():
         events=events,
         bookings=bookings,
         transactions=transactions,
-        total_earnings=total_earnings    # <<< pass it in
+        total_earnings=total_earnings   
     )
 
 
@@ -218,7 +180,26 @@ def update_profile():
     current_user.address = request.form.get('address')
     db.session.commit()
     flash("Profile updated!", "success")
-    return redirect(url_for('account') + '#profile')
+    # send them back to the right anchor on either dashboard
+    anchor = 'profile'
+    return redirect(url_for('account') if current_user.role=='organizer'
+                    else url_for('profile') + f'#{anchor}')
+
+@app.route('/profile')
+@login_required
+def profile():
+    if current_user.role != 'user':
+        flash("Access denied.", "danger")
+        return redirect(url_for('home'))
+
+    # Show the user's own bookings:
+    user_bookings = Booking.query.filter_by(customer_email=current_user.email).all()
+
+    return render_template(
+        'user-dashboard.html',
+        user=current_user,
+        bookings=user_bookings
+    )
 
 @app.route('/update_payment', methods=['POST'])
 @login_required
@@ -386,10 +367,70 @@ def edit_event(event_id):
     return render_template('edit_event.html', event=event)
 
 
+def create_test_user(email, role):
+    # Check if user already exists
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        print(f" User {email} already exists, skipping...")
+        return
+
+    # Create new user with explicit password
+    password_hash = generate_password_hash("test")
+    print(f" Creating user {email} with hash: {password_hash[:20]}...")
+
+    u = User(
+        name="Test " + role.title(),
+        email=email,
+        password=password_hash,
+        role=role
+    )
+    db.session.add(u)
+    db.session.commit()
+
+    # Verify the user was created correctly
+    created_user = User.query.filter_by(email=email).first()
+    if created_user:
+        test_check = check_password_hash(created_user.password, "test")
+        print(f" User {email} created successfully. Password check: {test_check}")
+    else:
+        print(f" ERROR: Failed to create user {email}")
+
+@app.route('/debug/form', methods=['POST'])
+def debug_form():
+    print("=== FORM DEBUG ===")
+    print("Form data:", dict(request.form))
+    print("Method:", request.method)
+    print("==================")
+    return f"Form data: {dict(request.form)}"
+
+@app.route('/debug/users')
+def debug_users():
+    users = User.query.all()
+    result = "<h2>All Users in Database:</h2>"
+    for user in users:
+        result += f"<p>ID: {user.id}, Email: {user.email}, Role: {user.role}, Name: {user.name}</p>"
+    return result
+
+@app.route('/debug/routes')
+def debug_routes():
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append(f"{rule.rule} -> {rule.endpoint} ({rule.methods})")
+    return "<br>".join(routes)
+
+
 # -----------------------
 # INIT & RUN
 # -----------------------
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
+        db.create_all()  # create databases
+        create_test_user("test_user@test.com", "user")  
+        create_test_user("test_org@test.com", "organizer")
+
+        # List all users
+        users = User.query.all()
+        print(f"Total users in database: {len(users)}")
+        for user in users:
+            print(f"  - {user.email} ({user.role})")
     app.run(debug=True)
