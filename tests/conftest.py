@@ -2,7 +2,7 @@ import os
 import tempfile
 import pytest
 
-# Import the Flask `app` and the models from backend
+# Import the Flask app and the models from backend
 from backend.app import app as flask_app
 from backend.models import db, User, Event, Booking, Transaction
 
@@ -67,7 +67,7 @@ def sample_organizer(app):
     from werkzeug.security import generate_password_hash
 
     with app.app_context():
-        org = User(  
+        org = User(
             name="Test Organizer",
             email="org@example.com",
             password=generate_password_hash("testpass"),

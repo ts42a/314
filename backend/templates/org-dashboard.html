@@ -333,24 +333,41 @@
           </div>
           <div class="table-responsive">
             <table class="table table-striped">
-              <thead><tr><th>Date</th><th>Customer</th><th>Event</th><th>Qty</th><th>Method</th><th>Actions</th></tr></thead>
-              <tbody>
+              <thead><tr><th>Date</th><th>Customer</th><th>Event</th><th>Qty</th><th>Method</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
               {% for b in bookings %}
-                <tr>
-                  <td>{{ b.timestamp.strftime('%Y-%m-%d') }}</td>
-                  <td>{{ b.customer_name }}</td>
-                  <td>{{ b.event.title }}</td>
-                  <td>{{ b.tickets_qty }}</td>
-                  <td>{{ b.payment_method }}</td>
-                  <td>
-                    <a href="mailto:{{ b.customer_email }}" class="btn btn-sm btn-outline-primary me-1">Email</a>
-                <form action="{{ url_for('cancel_booking', booking_id=b.id) }}" method="post" onsubmit="return confirm('Are you sure you want to cancel this booking?');" style="display:inline;">
-                  <button type="submit" class="btn btn-sm btn-danger text-white">Cancel</button>
-                </form>
-                  </td>
-                </tr>
+              <tr>
+                <td>{{ b.timestamp.strftime('%Y-%m-%d') }}</td>
+                <td>{{ b.customer_name }}</td>
+                <td>{{ b.event.title }}</td>
+                <td>{{ b.tickets_qty }}</td>
+                <td>{{ b.payment_method }}</td>
+                <td>
+                  {% if b.status == 'approved' %}
+                    <span class="badge bg-success">Approved</span>
+                  {% elif b.status == 'rejected' %}
+                    <span class="badge bg-danger">Rejected</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Pending</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if b.status == 'pending' %}
+                    <form action="{{ url_for('approve_booking', booking_id=b.id) }}" method="post" style="display:inline;">
+                      <button class="btn btn-sm btn-success text-white">Approve</button>
+                    </form>
+                    <form action="{{ url_for('reject_booking', booking_id=b.id) }}" method="post" style="display:inline;">
+                      <button class="btn btn-sm btn-warning text-white">Reject</button>
+                    </form>
+                  {% elif b.status == 'approved' %}
+                    <form action="{{ url_for('cancel_booking', booking_id=b.id) }}" method="post" onsubmit="return confirm('Are you sure you want to cancel this booking?');" style="display:inline;">
+                      <button type="submit" class="btn btn-sm btn-danger text-white">Cancel</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
               {% endfor %}
-              </tbody>
+            </tbody>
             </table>
           </div>
           <!-- Manual Booking Modal -->

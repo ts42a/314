@@ -64,6 +64,7 @@ class Booking(db.Model):
     tickets_qty    = db.Column(db.Integer, default=1)
     payment_method = db.Column(db.String(20))
     timestamp      = db.Column(db.DateTime, default=datetime.utcnow)
+    status         = db.Column(db.String(20), default='pending')  
 
 # ─── Transaction (for payments, cash‐outs, etc.) ─────────────────────────────
 class Transaction(db.Model):

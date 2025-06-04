@@ -284,6 +284,9 @@ def cancel_booking(booking_id):
     for ticket in booking.tickets:
         db.session.delete(ticket)
 
+    # Restore the guests_limit
+    booking.event.guests_limit += booking.tickets_qty
+    
     # Delete associated transactions (if any)
     Transaction.query.filter_by(event_id=booking.event_id).delete()
 
@@ -388,8 +391,9 @@ def book_event(event_id):
         customer_name  = customer_name,
         customer_email = customer_email,
         tickets_qty    = quantity,
-        payment_method = payment_method,
-        ticket_type    = ticket_type
+        ticket_type    = ticket_type,
+        payment_method=payment_method,
+        status='pending',
     )
     db.session.add(booking)
     db.session.commit()
@@ -410,6 +414,39 @@ def book_event(event_id):
     db.session.commit()
     flash("Booking confirmed!", "success")
     return redirect(url_for('event_page', event_id=event.id))
+
+@app.route('/approve_booking/<int:booking_id>', methods=['POST'])
+@login_required
+def approve_booking(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+    event = booking.event
+
+    # Only allow organizer
+    if current_user.id != event.organizer_id:
+        abort(403)
+
+    if booking.status != 'approved':
+        booking.status = 'approved'
+        event.guests_limit -= booking.tickets_qty
+        db.session.commit()
+
+    flash("Booking approved successfully", "success")
+    return redirect(url_for('account') + '#bookings')
+
+
+@app.route('/reject_booking/<int:booking_id>', methods=['POST'])
+@login_required
+def reject_booking(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+
+    if current_user.role != 'organizer' or booking.event.organizer_id != current_user.id:
+        abort(403)
+
+    booking.status = 'rejected'
+    db.session.commit()
+    flash("Booking rejected.", "warning")
+    return redirect(url_for('account') + '#bookings')
+    
     
 @app.route('/add-to-calendar/<int:event_id>')
 def add_to_calendar(event_id):
@@ -463,6 +500,11 @@ def generate_ticket(booking_id):
 @login_required
 def view_ticket(booking_id):
     booking = Booking.query.get_or_404(booking_id)
+    
+    # Organizer approval check
+    if booking.status != 'approved':
+        flash("This booking has not been approved yet.", "danger")
+        return redirect(url_for('profile'))
 
     # Authorization check
     if current_user.role == 'user' and booking.customer_email != current_user.email:
