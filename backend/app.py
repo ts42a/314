@@ -405,6 +405,32 @@ def edit_event(event_id):
         return redirect(url_for('event_page', event_id=event.id))
     return render_template('edit_event.html', event=event)
 
+@app.route('/generate_ticket/<int:booking_id>', methods=['POST'])
+@login_required
+def generate_ticket(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+
+    # Only the customer can generate
+    if current_user.role != 'user' or booking.customer_email != current_user.email:
+        abort(403)
+
+    # Simulate generation (PDF/QR not needed for test)
+    flash("Ticket generated successfully!", "success")
+    return redirect(url_for('view_ticket', booking_id=booking.id))
+
+@app.route('/ticket/<int:booking_id>')
+@login_required
+def view_ticket(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+
+    # Authorization check
+    if current_user.role == 'user' and booking.customer_email != current_user.email:
+        abort(403)
+    elif current_user.role == 'organizer' and booking.event.organizer_id != current_user.id:
+        abort(403)
+
+    return render_template('ticket.html', booking=booking)
+
 def create_test_user(email, role):
     # Check if user already exists
     existing_user = User.query.filter_by(email=email).first()
