@@ -1,0 +1,50 @@
+from backend.models import db, User, Event, Booking, Transaction
+
+def test_edit_event(client, app, sample_organizer):
+    """
+    Test that an organizer can successfully edit an existing event.
+    """
+    # Create an event to edit
+    with app.app_context():
+        # First, create an event to edit
+        original_event = Event(
+            title='Original Event',
+            description='Original description',
+            date='2025-06-10',
+            location='Original Location',
+            price=20.00,
+            guests_limit=30,
+            organizer_id=sample_organizer  # Use the ID directly
+        )
+        db.session.add(original_event)
+        db.session.commit()
+        event_id = original_event.id
+
+    # Simulate login
+    with client.session_transaction() as session:
+        session['_user_id'] = str(sample_organizer)
+
+    # Submit the event edit form
+    response = client.post(f'/edit_event/{event_id}', data={
+        'title': 'Updated Event Title',
+        'description': 'Updated event description.',
+        'date_single': '2025-06-15',
+        'location': 'Updated Location',
+        'price': '35.75',
+        'capacity': '75'
+    }, follow_redirects=True)
+
+    # Assertions
+    assert response.status_code == 200
+
+    with app.app_context():
+        # Re-fetch the event to check if it was updated
+        updated_event = Event.query.get(event_id)
+        assert updated_event is not None
+        assert updated_event.title == 'Updated Event Title'
+        assert updated_event.description == 'Updated event description.'
+        assert updated_event.date == '2025-06-15'
+        assert updated_event.location == 'Updated Location'
+        assert updated_event.price == 35.75
+        assert updated_event.guests_limit == 75
+        assert updated_event.organizer_id == sample_organizer

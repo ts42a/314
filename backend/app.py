@@ -302,19 +302,19 @@ def launch_event():
             title        = request.form['title'],
             description  = request.form['description'],
             date         = request.form['date_single'],
-            time         = request.form['time_single'],
             location     = request.form['location'],
             price        = float(request.form['price']),
-            capacity     = int(request.form['capacity']),
-            category     = request.form['category'],
-            image_url    = request.form.get('image_url'),
-            organizer_id = current_user.id
+            organizer_id = current_user.id,
+            guests_limit = int(request.form['capacity'])  
+            # time         = request.form['time_single'],
+           # category     = request.form['category'],
+           # image_url    = request.form.get('image_url'),
         )
         db.session.add(event)
         db.session.commit()
         flash("Event created!", "success")
         return redirect(url_for('event_page', event_id=event.id))
-    return render_template('lunch_event.html')
+    return render_template('launch_event.html')
 
 @app.route('/event/<int:event_id>')
 def event_page(event_id):
@@ -336,6 +336,24 @@ def book_event(event_id):
     flash("Booking confirmed!", "success")
     return redirect(url_for('event_page', event_id=event.id))
 
+@app.route('/delete_event/<int:event_id>', methods=['POST'])
+@login_required
+def delete_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    if current_user.id != event.organizer_id:
+        abort(403)
+    
+    # Delete associated bookings first
+    Booking.query.filter_by(event_id=event_id).delete()
+    Transaction.query.filter_by(event_id=event_id).delete()
+    
+    # Delete the event
+    db.session.delete(event)
+    db.session.commit()
+    
+    flash("Event deleted successfully!", "success")
+    return redirect(url_for('account'))
+    
 @app.route('/add-to-calendar/<int:event_id>')
 def add_to_calendar(event_id):
     event = Event.query.get_or_404(event_id)
@@ -362,17 +380,14 @@ def edit_event(event_id):
         event.title       = request.form['title']
         event.description = request.form['description']
         event.date        = request.form['date_single']
-        event.time        = request.form['time_single']
+        # event.time        = request.form['time_single']    
         event.location    = request.form['location']
         event.price       = float(request.form['price'])
-        event.capacity    = int(request.form['capacity'])
-        event.category    = request.form['category']
-        event.image_url   = request.form.get('image_url')
+        event.guests_limit = int(request.form['capacity'])    # capacity -> guests_limit
         db.session.commit()
         flash("Event updated!", "success")
         return redirect(url_for('event_page', event_id=event.id))
     return render_template('edit_event.html', event=event)
-
 
 def create_test_user(email, role):
     # Check if user already exists
@@ -427,14 +442,15 @@ def debug_routes():
 
 
 # -----------------------
-# INIT & RUN
+# INIT & RUN 
 # -----------------------
 if __name__ == '__main__':
     with app.app_context():
+        db.drop_all()  # Remove all existing tables
         db.create_all()  # create databases
         create_test_user("test_user@test.com", "user")  
         create_test_user("test_org@test.com", "organizer")
-
+        # Every restart reset all data records
         # List all users
         users = User.query.all()
         print(f"Total users in database: {len(users)}")

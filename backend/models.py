@@ -28,22 +28,25 @@ class User(UserMixin, db.Model):
 # ─── The single Event model (linked to User via organizer_id) ───────────────
 class Event(db.Model):
     __tablename__ = "event"
-
     id            = db.Column(db.Integer, primary_key=True)
     title         = db.Column(db.String(120), nullable=False)
     description   = db.Column(db.Text, nullable=False)
     location      = db.Column(db.String(100), nullable=False)
-    date          = db.Column(db.String(50),  nullable=False)   # e.g. "YYYY-MM-DD"
+    date          = db.Column(db.String(50),  nullable=False)
     price         = db.Column(db.Float,       nullable=False)
-    guests_limit  = db.Column(db.Integer,     nullable=False)
+    guests_limit  = db.Column(db.Integer,     nullable=False) 
     organizer_id  = db.Column(db.Integer,     db.ForeignKey("user.id"), nullable=False)
-
-    # You can compute tickets_sold via the bookings relationship:
+   # time          = db.Column(db.String(20), nullable=True)
+   # category      = db.Column(db.String(50), nullable=True)
+  #  image_url     = db.Column(db.String(255), nullable=True)
+    @property
+    def capacity(self):
+        return self.guests_limit
+    
     @property
     def tickets_sold(self):
         return sum(b.tickets_qty for b in self.bookings)
-
-    # Backrefs:
+    
     bookings      = db.relationship("Booking",    backref="event",      lazy="dynamic")
     transactions  = db.relationship("Transaction", backref="event",      lazy="dynamic")
 
