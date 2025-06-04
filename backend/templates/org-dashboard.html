@@ -321,9 +321,6 @@
 
   </div>
 </section>
-
-
-
         <!-- Manage Bookings -->
         <section id="bookings" class="mt-5">
           <h4>Manage Bookings</h4>
@@ -347,7 +344,9 @@
                   <td>{{ b.payment_method }}</td>
                   <td>
                     <a href="mailto:{{ b.customer_email }}" class="btn btn-sm btn-outline-primary me-1">Email</a>
-                    <a href="{{ url_for('edit_booking', booking_id=b.id) }}" class="btn btn-sm btn-warning">Edit</a>
+                <form action="{{ url_for('cancel_booking', booking_id=b.id) }}" method="post" onsubmit="return confirm('Are you sure you want to cancel this booking?');" style="display:inline;">
+                  <button type="submit" class="btn btn-sm btn-danger text-white">Cancel</button>
+                </form>
                   </td>
                 </tr>
               {% endfor %}
