@@ -51,7 +51,7 @@
           {% if current_user.role == 'organizer' %}
              <a class="btn btn-outline-light" href="{{ url_for('account') }}">ACCOUNT</a>
           {% else %}
-             <a class="btn btn-outline-light" href="{{ url_for('profile') }}">PROFILE</a>
+             <a class="btn btn-outline-light" href="{{ url_for('profile') }}">ACCOUNT</a>
           {% endif %}
           <!-- logout button -->
           <a class="btn btn-light" href="{{ url_for('logout') }}">LOG&nbsp;OUT</a>
