@@ -64,15 +64,7 @@
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav mx-auto">
-            <li class="nav-item"><a class="nav-link active" href="index.html">HOME</a></li>
-            <li class="nav-item"><a class="nav-link" href="discover.html">DISCOVER</a></li>
-            <li class="nav-item"><a class="nav-link" href="news.html">NEWS</a></li>
-            <li class="nav-item"><a class="nav-link" href="about_us.html">ABOUT US</a></li>
-            <li class="nav-item"><a class="nav-link" href="contact.html">BLOGS</a></li>
-        </ul>
-        <div>
+    <div class="collapse navbar-collapse" id="navbarNav">s
           <ul class="navbar-nav ms-auto">
             <li class="nav-item">
               <a class="nav-link text-white" href="{{ url_for('logout') }}">
@@ -80,12 +72,8 @@
               </a>
             </li>
           </ul>
-        </div>
-</div>
+    </div>
 </nav>
-
-
-
 
   <div class="container-fluid">
     <div class="row">
@@ -170,45 +158,83 @@
 
 
 
-        <!-- Events Overview -->
-        <section id="events-overview" class="mt-4">
-          <h4>Your Events</h4>
-          {% if events %}
-          <div class="table-responsive">
-            <table class="table table-striped align-middle">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Sold / Capacity</th>
-                  <th>Price</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for e in events %}
-                <tr>
-                  <td>{{ e.title }}</td>
-                  <td>{{ e.date }}</td>
-                  <td>{{ e.time }}</td>
-                  <td>{{ e.tickets_sold }}/{{ e.capacity }}</td>
-                  <td>${{ '%.2f'|format( e.price) }}</td>
-                  <td>
-                    <a href="{{ url_for('event_page', event_id=e.id) }}" class="btn btn-sm btn-primary me-1">View</a>
-                    <a href="{{ url_for('edit_event', event_id=e.id) }}" class="btn btn-sm btn-warning">Edit</a>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% else %}
-            <p class="text-muted">You haven't created any events yet.</p>
-          {% endif %}
-        </section>
+      <!-- Events Overview -->
+      <section id="events-overview" class="mt-4">
+        <h4>Your Events</h4>
+        {% if events %}
+        <div class="table-responsive">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Sold / Capacity</th>
+                <th>Price</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in events %}
+              <tr>
+                <td>{{ e.title }}</td>
+                <td>{{ e.date }}</td>
+                <td>{{ e.time }}</td>
+                <td>{{ e.tickets_sold }}/{{ e.capacity }}</td>
+                <td>${{ '%.2f'|format( e.price) }}</td>
+                <td>
+                  <a href="{{ url_for('event_page', event_id=e.id) }}" class="btn btn-sm btn-primary me-1">View</a>
+                  <a href="{{ url_for('edit_event', event_id=e.id) }}" class="btn btn-sm btn-warning">Edit</a>
+            <button type="button" class="btn btn-sm btn-danger" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#deleteEventModal{{ e.id }}">
+              Delete
+            </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <p class="text-muted">You haven't created any events yet.</p>
+        {% endif %}
+      </section>
 
-        <!-- Payment -->
+<!-- Delete Event Modals (one for each event) -->
+{% for e in events %}
+<div class="modal fade" id="deleteEventModal{{ e.id }}" tabindex="-1" aria-labelledby="deleteEventModalLabel{{ e.id }}" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteEventModalLabel{{ e.id }}">Delete Event</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>Warning!</strong> This action cannot be undone.
+        </div>
+        <p>Are you sure you want to delete the event <strong>"{{ e.title }}"</strong>?</p>
+        <p class="text-muted small">This will also delete:</p>
+        <ul class="text-muted small">
+          <li>All bookings for this event ({{ e.tickets_sold }} bookings)</li>
+          <li>All transaction records related to this event</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form method="post" action="{{ url_for('delete_event', event_id=e.id) }}" class="d-inline">
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash me-1"></i>Yes, Delete Event
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
 <!-- Payment -->
 <section id="payment" class="mt-5">
   <h4>Payment</h4>

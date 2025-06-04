@@ -67,7 +67,7 @@ def sample_organizer(app):
     from werkzeug.security import generate_password_hash
 
     with app.app_context():
-        org = User(  # Use User, not Organizer - there's only one User model
+        org = User(  
             name="Test Organizer",
             email="org@example.com",
             password=generate_password_hash("testpass"),
@@ -75,4 +75,4 @@ def sample_organizer(app):
         )
         db.session.add(org)
         db.session.commit()
-        return org
+        return org.id

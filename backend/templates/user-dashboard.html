@@ -3,127 +3,400 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>My Profile — {{ user.name }}</title>
-
-  <!-- same styles you already load -->
+  <title>Dashboard — {{ user.name }}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"   rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    /* Sidebar link default, hover, and active states */
+    .sidebar .nav-link {
+      color: #a1a1a1 !important;
+    }
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link:focus,
+    .sidebar .nav-link.active,
+    .sidebar .nav-link:active {
+      background-color: rgba(255, 255, 255, 0.064) !important;
+      color: #ffffff !important;
+      text-decoration: none;
+    }
+    /* Icon color override remains same as link */
+    .sidebar .nav-link i {
+      color: #a1a1a1 !important;
+    }
+    .sidebar .nav-link:hover i,
+    .sidebar .nav-link:focus i,
+    .sidebar .nav-link.active i,
+    .sidebar .nav-link:active i {
+      color: #ffffff !important;
+    }
+    .btn{
+      background-color: var(--primary-color) !important;
+      color: white !important;
+      padding: 6px 30px !important;
+      border-radius: 5px !important;
+      border: 1px solid var(--primary-color) !important;
+      font-weight: 600;
+    }
+  /* Overview card styling */
+  .overview .card {
+    color: #fff;             /* white text */
+    font-weight: 700;        /* bold */
+  }
+  .overview .card.bookings {
+    background-color: rgba(40, 57, 71, 0.8);    /* dark-blue */
+  }
+  .overview .card.upcoming {
+    background-color: rgba(255, 127, 80, 0.8);  /* coral */
+  }
+  .overview .card.total-spent {
+    background-color: rgba(29, 113, 61, 0.8); /* green */
+  }
+  </style>
 </head>
 <body>
-
-<!-- NAVBAR (copied from index.html) -->
-<nav class="navbar navbar-expand-lg padding_y">
-  <a class="navbar-brand" href="{{ url_for('home') }}">
-    <img src="{{ url_for('static', filename='img/logo-w.svg') }}" style="width:50%;">
-  </a>
-  <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-
-  <div class="collapse navbar-collapse" id="navbarNav">
-    <ul class="navbar-nav mx-auto">
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">HOME</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('discover') }}">DISCOVER</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('news') }}">NEWS</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">ABOUT&nbsp;US</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('blogs') }}">BLOGS</a></li>
-    </ul>
-
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-light" href="{{ url_for('profile') }}">PROFILE</a>
-      <a class="btn btn-light" href="{{ url_for('logout') }}">LOG&nbsp;OUT</a>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg padding_y">
+    <a class="navbar-brand" href="#">    
+        <img alt="LOGO" style="width: 50%;" src="{{ url_for('static', filename='img/logo-w.svg') }}">
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link text-white" href="{{ url_for('logout') }}">
+                <i class="fas fa-sign-out-alt me-1"></i>Logout
+              </a>
+            </li>
+        </ul>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<div class="container py-4">
+  <div class="container-fluid">
+    <div class="row">
+      <!-- SIDEBAR -->
+      <nav class="col-md-2 d-none d-md-block bg-dark sidebar p-3">
+        <ul class="nav flex-column">
+          <li class="nav-item mb-2">
+            <a class="nav-link btn w-100 text-start {% if request.path in ['/profile', '/user-dashboard'] %}active{% endif %}" href="{{ url_for('profile') }}">
+              <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link w-100 text-start" href="#bookings">
+              <i class="fas fa-ticket-alt me-2"></i>My Bookings
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link w-100 text-start" href="#messages">
+              <i class="fas fa-envelope me-2"></i>Messages
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link w-100 text-start" href="{{ url_for('discover') }}">
+              <i class="fas fa-search me-2"></i>Discover Events
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link w-100 text-start" href="#profile">
+              <i class="fas fa-user me-2"></i>Profile
+            </a>
+          </li>
+        </ul>
+      </nav>
 
-  <!-- flash toast / alert -->
-  {% with msgs = get_flashed_messages(with_categories=true) %}
-    {% for c,m in msgs %}
-      <div class="alert alert-{{'success' if c=='success' else 'danger'}} alert-dismissible fade show">
-        {{ m }}
-        <button class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    {% endfor %}
-  {% endwith %}
+      <!-- MAIN -->
+      <main class="col-md-10 ms-sm-auto px-4 py-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <div class="alert alert-{{ 'success' if category=='success' else 'danger' }} alert-dismissible fade show" role="alert">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        
+        <h2>Welcome, {{ user.name }}</h2>
+        <hr>
 
-  <h2 class="mb-4">Welcome, {{ user.name }}</h2>
+        <!-- Overview Cards -->
+        <section id="overview" class="overview mb-4">
+          <div class="row text-center">
+            <div class="col-md-4 mb-3">
+              <div class="card shadow-sm bookings">
+                <div class="card-body">
+                  <h5>Total Bookings</h5>
+                  <p class="display-6">{{ bookings|length }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card shadow-sm upcoming">
+                <div class="card-body">
+                  <h5>Upcoming Events</h5>
+                  <p class="display-6">{{ upcoming_events|length if upcoming_events else 0 }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card shadow-sm total-spent">
+                <div class="card-body">
+                  <h5>Total Spent</h5>
+                  <p class="display-6">${{ '%.2f'|format(total_spent) if total_spent else '0.00' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-  <!-- PROFILE -->
-  <section id="profile">
-    <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <h5 class="card-title">My Profile</h5>
-        <p><strong>Name:</strong> {{ user.name }}</p>
-        <p><strong>Email:</strong> {{ user.email }}</p>
-        <p><strong>Phone:</strong> {{ user.phone or '—' }}</p>
-        <p><strong>Address:</strong> {{ user.address or '—' }}</p>
+        <!-- My Bookings -->
+        <section id="bookings" class="mt-4">
+          <h4>My Bookings</h4>
+          {% if bookings %}
+          <div class="d-flex justify-content-between mb-3">
+            <form class="d-flex" method="get" action="">
+              <input name="search" class="form-control me-2" placeholder="Search bookings" value="{{ request.args.get('search','') }}">
+              <button class="btn btn-outline-secondary">Search</button>
+            </form>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-striped align-middle">
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Tickets</th>
+                  <th>Total Paid</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for b in bookings %}
+                <tr>
+                  <td>{{ b.event.title }}</td>
+                  <td>{{ b.event.date }}</td>
+                  <td>{{ b.event.time }}</td>
+                  <td>{{ b.tickets_qty }}</td>
+                  <td>${{ '%.2f'|format(b.total_amount) if b.total_amount else '0.00' }}</td>
+                  <td>
+                    {% if b.event.date >= today %}
+                      <span class="badge bg-success">Upcoming</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Past</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{{ url_for('event_page', event_id=b.event.id) }}" class="btn btn-sm btn-primary me-1">View Event</a>
+                    {% if b.event.date >= today %}
+                      <button type="button" class="btn btn-sm btn-danger" 
+                              data-bs-toggle="modal" 
+                              data-bs-target="#cancelBookingModal{{ b.id }}">
+                        Cancel
+                      </button>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <div class="text-center py-5">
+              <i class="fas fa-ticket-alt fa-3x text-muted mb-3"></i>
+              <p class="text-muted">You haven't booked any events yet.</p>
+              <a href="{{ url_for('discover') }}" class="btn btn-primary">Discover Events</a>
+            </div>
+          {% endif %}
+        </section>
 
-        <button class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                data-bs-target="#editProfileModal">Edit Profile</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Optional bookings table -->
-  {% if bookings %}
-  <section id="bookings">
-    <h4 class="mb-3">My Bookings</h4>
-    <table class="table table-striped">
-      <thead><tr><th>Date</th><th>Event</th><th>Qty</th></tr></thead>
-      <tbody>
+        <!-- Cancel Booking Modals (one for each booking) -->
         {% for b in bookings %}
-          <tr>
-            <td>{{ b.timestamp.strftime('%Y-%m-%d') }}</td>
-            <td>{{ b.event.title }}</td>
-            <td>{{ b.tickets_qty }}</td>
-          </tr>
+        {% if b.event.date >= today %}
+        <div class="modal fade" id="cancelBookingModal{{ b.id }}" tabindex="-1" aria-labelledby="cancelBookingModalLabel{{ b.id }}" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="cancelBookingModalLabel{{ b.id }}">Cancel Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div class="alert alert-warning">
+                  <i class="fas fa-exclamation-triangle me-2"></i>
+                  <strong>Warning!</strong> This action cannot be undone.
+                </div>
+                <p>Are you sure you want to cancel your booking for <strong>"{{ b.event.title }}"</strong>?</p>
+                <p><strong>Event Date:</strong> {{ b.event.date }} at {{ b.event.time }}</p>
+                <p><strong>Tickets:</strong> {{ b.tickets_qty }}</p>
+                <p><strong>Total Paid:</strong> ${{ '%.2f'|format(b.total_amount) if b.total_amount else '0.00' }}</p>
+                <p class="text-muted small">Please note: Refund policies may apply. Contact the event organizer for more details.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Booking</button>
+                <form method="post" action="#" class="d-inline">
+                  <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-times me-1"></i>Yes, Cancel Booking
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
         {% endfor %}
-      </tbody>
-    </table>
-  </section>
-  {% endif %}
 
-</div>
+        <!-- Messages Section -->
+        <section id="messages" class="mt-5">
+          <h4>Messages</h4>
+          <div class="card shadow-sm mb-3">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0">Recent Messages</h5>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#composeMessageModal">
+                  <i class="fas fa-plus me-1"></i>Compose Message
+                </button>
+              </div>
+              
+              {% if messages %}
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>From</th>
+                        <th>Subject</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for message in messages %}
+                      <tr>
+                        <td>{{ message.sender_name }}</td>
+                        <td>{{ message.subject }}</td>
+                        <td>{{ message.timestamp.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                          {% if message.is_read %}
+                            <span class="badge bg-secondary">Read</span>
+                          {% else %}
+                            <span class="badge bg-primary">New</span>
+                          {% endif %}
+                        </td>
+                        <td>
+                          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#messageModal{{ message.id }}">
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="text-center py-4">
+                  <i class="fas fa-envelope-open fa-2x text-muted mb-3"></i>
+                  <p class="text-muted">No messages yet. Event organizers will be able to contact you here.</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </section>
 
-<!-- EDIT-PROFILE MODAL (re-uses /update_profile route) -->
-<div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <form method="post" action="{{ url_for('update_profile') }}" class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit Profile</h5>
-        <button class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body row g-3">
-        <div class="col-12">
-          <label class="form-label">Name</label>
-          <input name="name" class="form-control" value="{{ user.name }}" required>
+        <!-- Compose Message Modal -->
+        <div class="modal fade" id="composeMessageModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog">
+            <form method="post" action="#" class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Send Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label>To (Event Organizer)</label>
+                  <select name="organizer_id" class="form-select" required>
+                    <option value="">Select organizer...</option>
+                    {% for organizer in organizers %}
+                      <option value="{{ organizer.id }}">{{ organizer.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label>Subject</label>
+                  <input name="subject" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                  <label>Message</label>
+                  <textarea name="message" class="form-control" rows="4" required></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Send Message</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div class="col-12">
-          <label class="form-label">Phone</label>
-          <input name="phone" class="form-control" value="{{ user.phone }}">
+
+        <!-- Profile Section -->
+        <section id="profile" class="mt-5">
+          <h4>Profile</h4>
+          <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+              <p><strong>Name:</strong> {{ user.name }}</p>
+              <p><strong>Email:</strong> {{ user.email }}</p>
+              <p><strong>Phone:</strong> {{ user.phone or '—' }}</p>
+              <p><strong>Address:</strong> {{ user.address or '—' }}</p>
+              <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">Edit Profile</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Edit Profile Modal -->
+        <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <form method="post" action="{{ url_for('update_profile') }}" class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" class="form-control" value="{{ user.name }}" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" name="phone" class="form-control" value="{{ user.phone }}">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Address</label>
+                    <input type="text" name="address" class="form-control" value="{{ user.address }}">
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-success">Save Changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div class="col-12">
-          <label class="form-label">Address</label>
-          <input name="address" class="form-control" value="{{ user.address }}">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-success" type="submit">Save Changes</button>
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      </div>
-    </form>
+
+      </main>
+    </div>
   </div>
-</div>
 
-<!-- FOOTER (same as index.html) -->
-<footer class="bg-dark text-white text-center py-3">
-  <p>&copy; 2025 Easy Booking. All Rights Reserved.</p>
-</footer>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Footer -->
+  <footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2025 Easy Booking. All Rights Reserved.</p>
+  </footer>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
