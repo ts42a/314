@@ -8,12 +8,13 @@ from urllib.parse import quote
 from datetime import datetime, timedelta, date
 
 import os
+import qrcode
 
 try:
-    from backend.models import db, User, Event, Booking, Transaction
+    from backend.models import db, User, Event, Booking, Transaction, Ticket
 except ModuleNotFoundError:
     try:
-        from models import db, User, Event, Booking, Transaction
+        from models import db, User, Event, Booking, Transaction, Ticket
     except ModuleNotFoundError as e:
         print("Error: Could not import 'backend.models' or fallback 'models'.")
         raise SystemExit("Fatal: Required models module not found. Exiting.")
@@ -34,6 +35,15 @@ login_manager.login_view = 'home'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Helper Functions
+def generate_qr(data, folder="static/qr"):
+    os.makedirs(folder, exist_ok=True)
+    relative_path = f"qr/{data}.png"
+    full_path = os.path.join(folder, f"{data}.png")
+    img = qrcode.make(data)
+    img.save(full_path)
+    return relative_path  
+    
 # -----------------------
 # ROUTES
 # -----------------------
@@ -270,8 +280,14 @@ def cancel_booking(booking_id):
     if not is_authorized:
         abort(403)
 
-    # Delete booking and its associated transaction
+    # Delete associated tickets FIRST to avoid foreign key issues
+    for ticket in booking.tickets:
+        db.session.delete(ticket)
+
+    # Delete associated transactions (if any)
     Transaction.query.filter_by(event_id=booking.event_id).delete()
+
+    # Delete the booking
     db.session.delete(booking)
     db.session.commit()
 
@@ -332,6 +348,26 @@ def launch_event():
         return redirect(url_for('event_page', event_id=event.id))
     return render_template('launch_event.html')
 
+@app.route('/delete_event/<int:event_id>', methods=['POST'])
+@login_required
+def delete_event(event_id):
+    event = Event.query.get_or_404(event_id)
+
+    # Only the organizer who created the event can delete it
+    if current_user.role != 'organizer' or event.organizer_id != current_user.id:
+        abort(403)
+
+    # Delete all bookings and transactions tied to this event
+    Booking.query.filter_by(event_id=event.id).delete()
+    Transaction.query.filter_by(event_id=event.id).delete()
+
+    # Finally delete the event itself
+    db.session.delete(event)
+    db.session.commit()
+
+    flash("Event deleted successfully!", "success")
+    return redirect(url_for('account'))
+
 @app.route('/event/<int:event_id>')
 def event_page(event_id):
     event = Event.query.get_or_404(event_id)
@@ -340,35 +376,40 @@ def event_page(event_id):
 @app.route('/book_event/<int:event_id>', methods=['POST'])
 def book_event(event_id):
     event = Event.query.get_or_404(event_id)
-    b = Booking(
+
+    ticket_type    = request.form['ticket_type']
+    quantity       = int(request.form['ticket_qty'])
+    customer_name  = request.form['customer_name']
+    customer_email = request.form['customer_email']
+    payment_method = request.form['payment_method']
+
+    booking = Booking(
         event_id       = event.id,
-        customer_name  = request.form['customer_name'],
-        customer_email = request.form['customer_email'],
-        tickets_qty    = int(request.form['ticket_qty']),
-        payment_method = request.form['payment_method']
+        customer_name  = customer_name,
+        customer_email = customer_email,
+        tickets_qty    = quantity,
+        payment_method = payment_method,
+        ticket_type    = ticket_type
     )
-    db.session.add(b)
+    db.session.add(booking)
+    db.session.commit()
+
+    # Generate ticket codes & QR codes
+    for i in range(quantity):
+        unique_code = f"{booking.id}-{i+1}-{os.urandom(4).hex()}"
+        qr_path = generate_qr(unique_code)  # implement below
+
+        ticket = Ticket(
+            booking_id = booking.id,
+            ticket_code = unique_code,
+            ticket_type = ticket_type,
+            qr_code_path = qr_path
+        )
+        db.session.add(ticket)
+
     db.session.commit()
     flash("Booking confirmed!", "success")
     return redirect(url_for('event_page', event_id=event.id))
-
-@app.route('/delete_event/<int:event_id>', methods=['POST'])
-@login_required
-def delete_event(event_id):
-    event = Event.query.get_or_404(event_id)
-    if current_user.id != event.organizer_id:
-        abort(403)
-    
-    # Delete associated bookings first
-    Booking.query.filter_by(event_id=event_id).delete()
-    Transaction.query.filter_by(event_id=event_id).delete()
-    
-    # Delete the event
-    db.session.delete(event)
-    db.session.commit()
-    
-    flash("Event deleted successfully!", "success")
-    return redirect(url_for('account'))
     
 @app.route('/add-to-calendar/<int:event_id>')
 def add_to_calendar(event_id):

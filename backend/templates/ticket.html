@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Ticket </title>
+    <title>My Ticket</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Bootstrap CSS and Icons -->
@@ -24,7 +24,7 @@
     <div class="container my-5">
         <div class="card shadow-lg mx-auto" style="max-width: 600px;">
             <div class="card-body">
-                <div class="alert alert-success text-center">Ticket generated successfully!</div>
+                <!-- <div class="alert alert-success text-center">Ticket generated successfully!</div>-->
                 <h3 class="card-title text-center text-primary mb-4">My Ticket</h3>
                 <hr>
                 <p><strong>Event:</strong> {{ booking.event.title }}</p>
@@ -33,6 +33,19 @@
                 <p><strong>Customer:</strong> {{ booking.customer_name }}</p>
                 <p><strong>Tickets:</strong> {{ booking.tickets_qty }}</p>
                 <p><strong>Payment Method:</strong> {{ booking.payment_method }}</p>
+
+                <hr>
+                <h5 class="text-center mt-4 mb-3">QR Code(s)</h5>
+                <div class="row justify-content-center">
+                    {% for ticket in booking.tickets %}
+                        <div class="col-6 col-md-4 text-center mb-4">
+                            <img src="{{ url_for('static', filename=ticket.qr_code_path) }}"
+     alt="QR Code" class="img-fluid img-thumbnail" style="max-width: 180px;">
+                            <div class="mt-2"><small>{{ ticket.ticket_code }}</small></div>
+                            <div><span class="badge bg-secondary">{{ ticket.ticket_type }}</span></div>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
