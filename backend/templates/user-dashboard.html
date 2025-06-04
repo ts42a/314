@@ -185,7 +185,7 @@
                   <td>{{ b.tickets_qty }}</td>
                   <td>${{ '%.2f'|format(b.total_amount) if b.total_amount else '0.00' }}</td>
                   <td>
-                    {% if b.event.date >= today %}
+                    {% if b.event._parsed_date >= today %}
                       <span class="badge bg-success">Upcoming</span>
                     {% else %}
                       <span class="badge bg-secondary">Past</span>
@@ -193,13 +193,14 @@
                   </td>
                   <td>
                     <a href="{{ url_for('event_page', event_id=b.event.id) }}" class="btn btn-sm btn-primary me-1">View Event</a>
-                    {% if b.event.date >= today %}
-                      <button type="button" class="btn btn-sm btn-danger" 
-                              data-bs-toggle="modal" 
-                              data-bs-target="#cancelBookingModal{{ b.id }}">
-                        Cancel
-                      </button>
-                    {% endif %}
+                  {% if b.event._parsed_date >= today %}
+                    <form method="post"
+                          action="{{ url_for('cancel_booking', booking_id=b.id) }}"
+                          onsubmit="return confirm('Are you sure you want to cancel this booking?');"
+                          style="display:inline;">
+                      <button type="submit" class="btn btn-sm btn-danger text-white">Cancel</button>
+                    </form>
+                  {% endif %}
                   </td>
                 </tr>
                 {% endfor %}
@@ -217,7 +218,7 @@
 
         <!-- Cancel Booking Modals (one for each booking) -->
         {% for b in bookings %}
-        {% if b.event.date >= today %}
+        {% if b.event._parsed_date >= today %}
         <div class="modal fade" id="cancelBookingModal{{ b.id }}" tabindex="-1" aria-labelledby="cancelBookingModalLabel{{ b.id }}" aria-hidden="true">
           <div class="modal-dialog">
             <div class="modal-content">

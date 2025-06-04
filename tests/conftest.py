@@ -57,7 +57,7 @@ def sample_user(app):
         )
         db.session.add(user)
         db.session.commit()
-        return user
+        return user.id
 
 @pytest.fixture
 def sample_organizer(app):
@@ -76,3 +76,40 @@ def sample_organizer(app):
         db.session.add(org)
         db.session.commit()
         return org.id
+
+@pytest.fixture
+def sample_event_with_booking(app, sample_user, sample_organizer):
+    """
+    Create an event by the organizer and a booking by the user.
+    Returns (event_id, booking_id) instead of objects to avoid detachment issues.
+    """
+    with app.app_context():
+        organizer = User.query.get(sample_organizer)
+        user = User.query.get(sample_user)
+
+        # Create event
+        event = Event(
+            title="Sample Event",
+            description="Test event with booking",
+            date="2025-06-25",
+            location="Sample Location",
+            price=25.0,
+            organizer_id=organizer.id,
+            guests_limit=50
+        )
+        db.session.add(event)
+        db.session.commit()
+
+        # Create booking by user
+        booking = Booking(
+            event_id=event.id,
+            customer_name=user.name,
+            customer_email=user.email,
+            tickets_qty=2,
+            payment_method="Credit Card"
+        )
+        db.session.add(booking)
+        db.session.commit()
+
+        # Return IDs instead of objects to avoid detachment
+        return event.id, booking.id

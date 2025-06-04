@@ -5,7 +5,8 @@ from flask_login import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import quote
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+
 import os
 
 try:
@@ -199,15 +200,22 @@ def profile():
         flash("Access denied.", "danger")
         return redirect(url_for('home'))
 
-    # Show the user's own bookings:
     user_bookings = Booking.query.filter_by(customer_email=current_user.email).all()
+    today = date.today()
+
+    # Preprocess event date to real date object
+    for b in user_bookings:
+        if isinstance(b.event.date, str):
+            b.event._parsed_date = datetime.strptime(b.event.date, '%Y-%m-%d').date()
+        else:
+            b.event._parsed_date = b.event.date  # fallback if already date
 
     return render_template(
         'user-dashboard.html',
         user=current_user,
-        bookings=user_bookings
+        bookings=user_bookings,
+        today=today
     )
-
 @app.route('/update_payment', methods=['POST'])
 @login_required
 def update_payment():
@@ -248,23 +256,31 @@ def manual_booking():
     flash("Manual booking added!", "success")
     return redirect(url_for('account') + '#bookings')
 
-@app.route('/edit_booking/<int:booking_id>', methods=['GET', 'POST'])
+@app.route('/cancel_booking/<int:booking_id>', methods=['POST'])
 @login_required
-def edit_booking(booking_id):
+def cancel_booking(booking_id):
     booking = Booking.query.get_or_404(booking_id)
-    if current_user.role != 'organizer' or booking.event.organizer_id != current_user.id:
+
+    # Allow only the organizer or the user who booked it
+    if current_user.role == 'organizer':
+        is_authorized = booking.event.organizer_id == current_user.id
+    else:
+        is_authorized = booking.customer_email == current_user.email
+
+    if not is_authorized:
         abort(403)
 
-    if request.method == 'POST':
-        booking.customer_name  = request.form['customer_name']
-        booking.customer_email = request.form['customer_email']
-        booking.tickets_qty    = int(request.form['tickets_qty'])
-        booking.payment_method = request.form['payment_method']
-        db.session.commit()
-        flash("Booking updated successfully!", "success")
-        return redirect(url_for('account') + '#bookings')
+    # Delete booking and its associated transaction
+    Transaction.query.filter_by(event_id=booking.event_id).delete()
+    db.session.delete(booking)
+    db.session.commit()
 
-    return render_template('edit_booking.html', booking=booking)
+    flash("Booking canceled successfully!", "success")
+
+    # Redirect based on user type
+    if current_user.role == 'organizer':
+        return redirect(url_for('account') + '#bookings')
+    return redirect(url_for('profile') + '#bookings')
 
 @app.route('/cash_out', methods=['POST'])
 @login_required
@@ -417,6 +433,31 @@ def create_test_user(email, role):
     else:
         print(f" ERROR: Failed to create user {email}")
 
+def create_test_event(organizer_email):
+    organizer = User.query.filter_by(email=organizer_email, role='organizer').first()
+    if not organizer:
+        print(f"❌ Organizer with email {organizer_email} not found. Skipping event creation.")
+        return
+
+    if Event.query.filter_by(title="Test Event").first():
+        print("✅ Test event already exists. Skipping.")
+        return
+
+    from datetime import date
+
+    e = Event(
+        title="Test Event",
+        description="This is a demo event created on app startup.",
+        date=date.today().strftime('%Y-%m-%d'),
+        location="Online",
+        price=20.0,
+        guests_limit=100,
+        organizer_id=organizer.id
+    )
+    db.session.add(e)
+    db.session.commit()
+    print(f"Created test event: {e.title} for organizer {organizer.email}")
+
 @app.route('/debug/form', methods=['POST'])
 def debug_form():
     print("=== FORM DEBUG ===")
@@ -450,6 +491,7 @@ if __name__ == '__main__':
         db.create_all()  # create databases
         create_test_user("test_user@test.com", "user")  
         create_test_user("test_org@test.com", "organizer")
+        create_test_event("test_org@test.com")
         # Every restart reset all data records
         # List all users
         users = User.query.all()
