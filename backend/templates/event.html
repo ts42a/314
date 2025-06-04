@@ -208,6 +208,12 @@
           </div>
         {% endif %}
 
+      <label for="ticket_type">Ticket Type:</label>
+        <select name="ticket_type" required>
+          <option value="General">General</option>
+          <option value="VIP">VIP</option>
+        </select>
+
       <div class="mb-3">
         <label class="form-label">Payment</label>
         <select name="payment_method" class="form-select" required>

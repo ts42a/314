@@ -1,6 +1,7 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+import uuid
 
 # ─── The ONE global SQLAlchemy() instance ────────────────────────────────────
 db = SQLAlchemy()
@@ -56,6 +57,8 @@ class Booking(db.Model):
 
     id             = db.Column(db.Integer, primary_key=True)
     event_id       = db.Column(db.Integer, db.ForeignKey("event.id"), nullable=False)
+    ticket_code = db.Column(db.String(64), unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
+    ticket_type = db.Column(db.String(50), nullable=True)
     customer_name  = db.Column(db.String(100), nullable=False)
     customer_email = db.Column(db.String(100), nullable=False)
     tickets_qty    = db.Column(db.Integer, default=1)
@@ -72,3 +75,13 @@ class Transaction(db.Model):
     date             = db.Column(db.Date,  default=datetime.utcnow)
     status           = db.Column(db.String(50), nullable=False)
     cash_out_amount  = db.Column(db.Float, nullable=True)
+    
+    # ─── Booking ties a customer into an Event ────────────────────────────────────
+class Ticket(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_code = db.Column(db.String(100), unique=True, nullable=False)
+    booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
+    ticket_type = db.Column(db.String(50), nullable=False)
+    qr_code_path = db.Column(db.String(200), nullable=True)
+
+    booking = db.relationship("Booking", backref="tickets")
