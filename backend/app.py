@@ -618,11 +618,11 @@ def create_test_user(email, role):
 def create_test_event(organizer_email):
     organizer = User.query.filter_by(email=organizer_email, role='organizer').first()
     if not organizer:
-        print(f"❌ Organizer with email {organizer_email} not found. Skipping event creation.")
+        print(f" Organizer with email {organizer_email} not found. Skipping event creation.")
         return
 
     if Event.query.filter_by(title="Test Event").first():
-        print("✅ Test event already exists. Skipping.")
+        print("Test event already exists. Skipping.")
         return
 
     from datetime import date
@@ -631,7 +631,7 @@ def create_test_event(organizer_email):
         title="Test Event",
         description="This is a demo event created on app startup.",
         date=date.today().strftime('%Y-%m-%d'),
-        location="Online",
+        location="New York",
         general_price=20.0,
         vip_price=30.0,
         guests_limit=100,
