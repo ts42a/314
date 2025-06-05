@@ -1,6 +1,5 @@
 from backend.models import Event, User, Booking, Transaction, db
 
-
 def test_organizer_cancel_booking(client, app, sample_organizer):
     """
     Organizer cancels a booking they own.
@@ -16,20 +15,22 @@ def test_organizer_cancel_booking(client, app, sample_organizer):
             description='Test event',
             date='2025-07-01',
             location='Test Place',
-            price=25.0,
+            general_price=25.0,
+            vip_price=50.0,
             organizer_id=organizer_id,
             guests_limit=100
         )
         db.session.add(event)
         db.session.commit()
 
-        # Create booking under that event
+        # Create booking under that event (with total_price calculated)
         booking = Booking(
             event_id=event.id,
             customer_name='Bob Test',
             customer_email='bob@example.com',
             tickets_qty=3,
-            payment_method='Online'
+            payment_method='Online',
+            total_price=3 * event.general_price  # 3 tickets * $25 = $75
         )
         db.session.add(booking)
         db.session.commit()
@@ -46,7 +47,6 @@ def test_organizer_cancel_booking(client, app, sample_organizer):
     # Verify booking is deleted
     with app.app_context():
         assert Booking.query.get(booking_id) is None
-
 
 def test_user_cancel_own_booking(client, app, sample_user):
     """
@@ -73,20 +73,22 @@ def test_user_cancel_own_booking(client, app, sample_user):
             description='User-side cancel test',
             date='2025-07-10',
             location='CancelLand',
-            price=30.0,
+            general_price=30.0,
+            vip_price=50.0,
             organizer_id=organizer.id,
             guests_limit=80
         )
         db.session.add(event)
         db.session.commit()
 
-        # Create booking by user
+        # Create booking by user (with total_price calculated)
         booking = Booking(
             event_id=event.id,
             customer_name=user.name,
             customer_email=user.email,
             tickets_qty=1,
-            payment_method='Card'
+            payment_method='Card',
+            total_price=1 * event.general_price  # 1 ticket * $30 = $30
         )
         db.session.add(booking)
         db.session.commit()

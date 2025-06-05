@@ -19,9 +19,12 @@ def test_create_event(client, app, sample_organizer):
         'date_single': '2025-06-12',
         'time_single': '14:00',
         'location': 'Online',
-        'price': '25.50',
+        'general_price': '25.50',  # Changed from 'price' to 'general_price'
+        'vip_price': '50.00',      # Added VIP price
+        'offer_vip': 'on',         # Added VIP checkbox
         'capacity': '50',
-       # 'category': 'Tech',
+        'event_type': 'single',    # Added event type
+        'category': 'Tech',
         'image_url': ''
     }, follow_redirects=True)
 
@@ -31,7 +34,17 @@ def test_create_event(client, app, sample_organizer):
     with app.app_context():
         event = Event.query.filter_by(title='Test Event').first()
         assert event is not None
-        assert event.organizer_id == user.id
+        assert event.title == 'Test Event'
+        assert event.description == 'This is a test event.'
+        assert event.date == '2025-06-12'
+        assert event.time == '14:00'
+        assert event.location == 'Online'
+        assert event.general_price == 25.50
+        assert event.vip_price == 50.00
         assert event.guests_limit == 50
-        # assert event.category == 'Tech'
-
+        assert event.event_type == 'single'
+        assert event.category == 'Tech'
+        assert event.organizer_id == user.id
+        # Verify multi-day fields are None for single events
+        assert event.end_date is None
+        assert event.end_time is None

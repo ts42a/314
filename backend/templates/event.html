@@ -9,6 +9,25 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
+<script>
+  function toggleVipInput() {
+    const vipSection = document.getElementById('vipTicketSection');
+    const vipCheckbox = document.getElementById('enableVip');
+    vipSection.style.display = vipCheckbox.checked ? 'block' : 'none';
+  }
+
+  function calculateTotal() {
+    const generalPrice = parseFloat("{{ event.general_price }}") || 0;
+    const vipPrice = parseFloat("{{ event.vip_price }}") || 0;
+
+    const generalQty = parseInt(document.getElementById('generalQty').value) || 0;
+    const vipQty = document.getElementById('enableVip').checked ? (parseInt(document.getElementById('vipQty').value) || 0) : 0;
+
+    const total = (generalQty * generalPrice) + (vipQty * vipPrice);
+    document.getElementById('totalPriceDisplay').value = total.toFixed(2);
+  }
+</script>
+
 
 <body>
     <!-- Navigation Bar -->
@@ -180,11 +199,6 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 <div class="modal-body">
-  <div class="mb-3">
-    <label class="form-label">Quantity</label>
-    <input type="number" name="ticket_qty" class="form-control" min="1"
-           max="{{ event.guests_limit - event.tickets_sold }}" value="1" required>
-  </div>
 
     {% if current_user.is_authenticated %}
       <input type="hidden" name="customer_name" value="{{ current_user.name }}">
@@ -208,11 +222,27 @@
           </div>
         {% endif %}
 
-      <label for="ticket_type">Ticket Type:</label>
-        <select name="ticket_type" required>
-          <option value="General">General</option>
-          <option value="VIP">VIP</option>
-        </select>
+      <div class="mb-3">
+        <label class="form-label">General Tickets ($<span style="color: black;">{{ event.general_price }}</span>)</label>
+        <input type="number" name="general_qty" id="generalQty" class="form-control" min="0" value="0" onchange="calculateTotal()">
+      </div>
+
+      <div class="form-check mb-2">
+        <input class="form-check-input" type="checkbox" id="enableVip" onchange="toggleVipInput(); calculateTotal();">
+        <label class="form-check-label" for="enableVip">
+          Include VIP Tickets ($<span style="color: black;">{{ event.vip_price }}</span>)
+        </label>
+      </div>
+
+      <div class="mb-3" id="vipTicketSection" style="display: none;">
+        <label class="form-label">VIP Tickets</label>
+        <input type="number" name="vip_qty" id="vipQty" class="form-control" min="0" value="0" onchange="calculateTotal()">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Total Price ($)</label>
+        <input type="text" id="totalPriceDisplay" class="form-control" readonly value="0.00">
+      </div>
 
       <div class="mb-3">
         <label class="form-label">Payment</label>

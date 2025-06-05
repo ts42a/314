@@ -24,9 +24,11 @@ def test_generate_ticket(client, app, sample_user):
             description="Generate ticket event",
             date=date.today().strftime('%Y-%m-%d'),
             location="Hall A",
-            price=40.0,
+            general_price=40.0,  # Changed from 'price' to 'general_price'
+            vip_price=80.0,      # Added required vip_price field
             organizer_id=organizer.id,
-            guests_limit=60
+            guests_limit=60,
+            event_type='single'  # Added required event_type field
         )
         db.session.add(event)
         db.session.commit()
@@ -36,7 +38,8 @@ def test_generate_ticket(client, app, sample_user):
             customer_name=user.name,
             customer_email=user.email,
             tickets_qty=1,
-            payment_method="Cash"
+            payment_method="Cash",
+            total_price=40.0  # Added required total_price field
         )
         db.session.add(booking)
         db.session.commit()

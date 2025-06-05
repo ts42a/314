@@ -93,20 +93,23 @@ def sample_event_with_booking(app, sample_user, sample_organizer):
             description="Test event with booking",
             date="2025-06-25",
             location="Sample Location",
-            price=25.0,
+            general_price=25.0,
+            vip_price=30.0,
             organizer_id=organizer.id,
             guests_limit=50
         )
         db.session.add(event)
         db.session.commit()
 
-        # Create booking by user
+        # Create booking by user - ADD total_price field
         booking = Booking(
             event_id=event.id,
             customer_name=user.name,
             customer_email=user.email,
             tickets_qty=2,
-            payment_method="Credit Card"
+            payment_method="Credit Card",
+            total_price=2 * event.general_price,  # ADD THIS LINE: 2 * 25.0 = 50.0
+            status='confirmed'  # Also add status if needed
         )
         db.session.add(booking)
         db.session.commit()

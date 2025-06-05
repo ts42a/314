@@ -9,8 +9,8 @@ def test_user_view_profile(client, app, sample_user):
     with app.app_context():
         user = User.query.get(sample_user)
         user_id = user.id
-        user_name = user.name      # ✅ extract safely
-        user_email = user.email    # ✅ extract safely
+        user_name = user.name
+        user_email = user.email
 
         # Create dummy organizer for event
         organizer = User(
@@ -27,9 +27,11 @@ def test_user_view_profile(client, app, sample_user):
             description='Test description',
             date=date.today().strftime('%Y-%m-%d'),
             location='Testville',
-            price=20.0,
+            general_price=20.0,
+            vip_price=40.0,
             organizer_id=organizer.id,
-            guests_limit=100
+            guests_limit=100,
+            event_type='single'
         )
         db.session.add(event)
         db.session.commit()
@@ -40,7 +42,8 @@ def test_user_view_profile(client, app, sample_user):
             customer_name=user_name,
             customer_email=user_email,
             tickets_qty=1,
-            payment_method='Card'
+            payment_method='Card',
+            total_price=20.0 
         )
         db.session.add(booking)
         db.session.commit()
