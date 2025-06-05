@@ -193,9 +193,7 @@ def account():
 @app.route('/update_profile', methods=['POST'])
 @login_required
 def update_profile():
-    if current_user.role != 'organizer':
-        flash("Access denied.", "danger")
-        return redirect(url_for('home'))
+
     current_user.name    = request.form['name']
     current_user.phone   = request.form.get('phone')
     current_user.address = request.form.get('address')
