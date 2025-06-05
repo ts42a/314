@@ -37,7 +37,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # Helper Functions
-def generate_qr(data, folder="static/qr"):
+def generate_qr(data, folder="/qr"):
     os.makedirs(folder, exist_ok=True)
     relative_path = f"qr/{data}.png"
     full_path = os.path.join(folder, f"{data}.png")
@@ -213,6 +213,7 @@ def profile():
 
     user_bookings = Booking.query.filter_by(customer_email=current_user.email).all()
     today = date.today()
+    total_spent = sum(b.total_price for b in user_bookings if b.status == 'approved')
 
     # Preprocess event date to real date object
     for b in user_bookings:
@@ -225,7 +226,8 @@ def profile():
         'user-dashboard.html',
         user=current_user,
         bookings=user_bookings,
-        today=today
+        today=today,
+        total_spent=total_spent
     )
 @app.route('/update_payment', methods=['POST'])
 @login_required
