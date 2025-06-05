@@ -14,9 +14,11 @@ def test_delete_event(app, client, sample_organizer):
             description="A test event",
             date="2025-07-01",
             location="Test Location",
-            price=50.0,
+            general_price=50.0,  # Changed from 'price' to 'general_price'
+            vip_price=100.0,     # Added required vip_price field
             guests_limit=100,
-            organizer_id=sample_organizer
+            organizer_id=sample_organizer,
+            event_type='single'  # Added required event_type field
         )
         db.session.add(event)
         db.session.commit()
@@ -28,7 +30,8 @@ def test_delete_event(app, client, sample_organizer):
             customer_name="Test Customer",
             customer_email="customer@example.com",
             tickets_qty=2,
-            payment_method="credit_card"
+            payment_method="credit_card",
+            total_price=100.0  # Added the missing required total_price field
         )
         db.session.add(booking)
 
@@ -69,7 +72,7 @@ def test_delete_event(app, client, sample_organizer):
         assert remaining_bookings == 0
         assert remaining_transactions == 0
 
-#
+
 # def test_delete_event_unauthorized_user(app, client, sample_organizer, sample_user):
 #     """
 #     Test that a user who is not the organizer cannot delete an event.
@@ -81,20 +84,19 @@ def test_delete_event(app, client, sample_organizer):
 #             description="A test event",
 #             date="2025-07-01",
 #             location="Test Location",
-#             price=50.0,
+#             general_price=50.0,  # Changed from 'price' to 'general_price'
+#             vip_price=100.0,     # Added required vip_price field
 #             guests_limit=100,
-#             organizer_id=sample_organizer
+#             organizer_id=sample_organizer,
+#             event_type='single'  # Added required event_type field
 #         )
 #         db.session.add(event)
 #         db.session.commit()
 #         event_id = event.id
 #
 #     # Log in as a different user (not the organizer)
-#     login_response = client.post('/login', data={
-#         'email': 'test@example.com',
-#         'password': 'testpass'
-#     }, follow_redirects=True)
-#     assert login_response.status_code == 200
+#     with client.session_transaction() as session:
+#         session['_user_id'] = str(sample_user)
 #
 #     # Try to delete the event - should get 403 Forbidden
 #     delete_response = client.post(f'/delete_event/{event_id}')
@@ -113,17 +115,14 @@ def test_delete_event(app, client, sample_organizer):
 #     Test that trying to delete a non-existent event returns 404.
 #     """
 #     # Log in as the organizer
-#     login_response = client.post('/login', data={
-#         'email': 'org@example.com',
-#         'password': 'testpass'
-#     }, follow_redirects=True)
-#     assert login_response.status_code == 200
+#     with client.session_transaction() as session:
+#         session['_user_id'] = str(sample_organizer)
 #
 #     # Try to delete a non-existent event
 #     delete_response = client.post('/delete_event/99999')
 #     assert delete_response.status_code == 404
-#
-#
+
+
 # def test_delete_event_unauthenticated(app, client, sample_organizer):
 #     """
 #     Test that unauthenticated users cannot delete events.
@@ -135,9 +134,11 @@ def test_delete_event(app, client, sample_organizer):
 #             description="A test event",
 #             date="2025-07-01",
 #             location="Test Location",
-#             price=50.0,
+#             general_price=50.0,  # Changed from 'price' to 'general_price'
+#             vip_price=100.0,     # Added required vip_price field
 #             guests_limit=100,
-#             organizer_id=sample_organizer
+#             organizer_id=sample_organizer,
+#             event_type='single'  # Added required event_type field
 #         )
 #         db.session.add(event)
 #         db.session.commit()
@@ -168,9 +169,11 @@ def test_delete_event(app, client, sample_organizer):
 #             description="An event with multiple bookings",
 #             date="2025-07-01",
 #             location="Test Location",
-#             price=25.0,
+#             general_price=25.0,  # Changed from 'price' to 'general_price'
+#             vip_price=50.0,      # Added required vip_price field
 #             guests_limit=100,
-#             organizer_id=sample_organizer
+#             organizer_id=sample_organizer,
+#             event_type='single'  # Added required event_type field
 #         )
 #         db.session.add(event)
 #         db.session.commit()
@@ -200,10 +203,8 @@ def test_delete_event(app, client, sample_organizer):
 #         assert Transaction.query.filter_by(event_id=event_id).count() == 3
 #
 #     # Log in and delete the event
-#     client.post('/login', data={
-#         'email': 'org@example.com',
-#         'password': 'testpass'
-#     }, follow_redirects=True)
+#     with client.session_transaction() as session:
+#         session['_user_id'] = str(sample_organizer)
 #
 #     delete_response = client.post(f'/delete_event/{event_id}', follow_redirects=True)
 #     assert delete_response.status_code == 200

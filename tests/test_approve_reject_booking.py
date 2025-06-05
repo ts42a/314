@@ -9,9 +9,11 @@ def sample_booking(app, sample_organizer):
             description='For testing',
             date='2025-06-30',
             location='Sample Location',
-            price=20.0,
+            general_price=20.0,  # Changed from 'price' to 'general_price'
+            vip_price=40.0,      # Added required vip_price field
             organizer_id=sample_organizer,
-            guests_limit=50
+            guests_limit=50,
+            event_type='single'  # Added required event_type field
         )
         db.session.add(event)
         db.session.commit()
@@ -22,7 +24,8 @@ def sample_booking(app, sample_organizer):
             customer_email='testuser@example.com',
             tickets_qty=2,
             payment_method='Credit Card',
-            status='pending'
+            status='pending',
+            total_price=40.0  # Added required total_price field (2 tickets × $20 each)
         )
         db.session.add(booking)
         db.session.commit()

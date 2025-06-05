@@ -181,7 +181,7 @@
                 <td>{{ e.date }}</td>
                 <td>{{ e.time }}</td>
                 <td>{{ e.tickets_sold }}/{{ e.capacity }}</td>
-                <td>${{ '%.2f'|format( e.price) }}</td>
+                <td>${{ '%.2f'|format( e.general_price) }}</td>
                 <td>
                   <a href="{{ url_for('event_page', event_id=e.id) }}" class="btn btn-sm btn-primary me-1">View</a>
                   <a href="{{ url_for('edit_event', event_id=e.id) }}" class="btn btn-sm btn-warning">Edit</a>

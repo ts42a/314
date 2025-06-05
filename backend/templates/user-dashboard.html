@@ -164,51 +164,67 @@
             </form>
           </div>
           <div class="table-responsive">
-            <table class="table table-striped align-middle">
-              <thead>
-                <tr>
-                  <th>Event</th>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Tickets</th>
-                  <th>Total Paid</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for b in bookings %}
-                <tr>
-                  <td>{{ b.event.title }}</td>
-                  <td>{{ b.event.date }}</td>
-                  <td>{{ b.event.time }}</td>
-                  <td>{{ b.tickets_qty }}</td>
-                  <td>${{ '%.2f'|format(b.total_amount) if b.total_amount else '0.00' }}</td>
-                  <td>
-                    {% if b.status == 'approved' %}
-                      <span class="badge bg-success">Accepted</span>
-                    {% elif b.status == 'rejected' %}
-                      <span class="badge bg-danger">Rejected</span>
-                    {% else %}
-                      <span class="badge bg-warning text-dark">Pending</span>
-                    {% endif %}
-                  </td>
-                  <td>
-                    <a href="{{ url_for('event_page', event_id=b.event.id) }}" class="btn btn-sm btn-primary me-1">View Event</a>
-                      {% if b.event._parsed_date >= today and b.status == 'approved' %}
-                        <form method="post"
-                              action="{{ url_for('cancel_booking', booking_id=b.id) }}"
-                              onsubmit="return confirm('Are you sure you want to cancel this booking?');"
-                              style="display:inline;">
-                          <button type="submit" class="btn btn-sm btn-danger text-white">Cancel</button>
-                        </form>
-                      {% endif %}
-                      <a href="{{ url_for('view_ticket', booking_id=b.id) }}" class="btn btn-sm btn-outline-success mt-1">View Ticket</a>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+              <table class="table table-striped align-middle">
+                      <thead>
+                        <tr>
+                          <th>Event</th>
+                          <th>Date</th>
+                          <th>Time</th>
+                          <th>Tickets</th>
+                          <th>Total Paid</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for b in bookings %}
+                        <tr>
+                          <td>{{ b.event.title }}</td>
+                          <td>{{ b.event.date }}</td>
+                          <td>{{ b.event.time }}</td>
+                          <td>
+                            {% set vip_count = 0 %}
+                            {% set general_count = 0 %}
+                            {% for t in b.tickets %}
+                              {% if t.ticket_type == 'VIP' %}
+                                {% set vip_count = vip_count + 1 %}
+                              {% elif t.ticket_type == 'General' %}
+                                {% set general_count = general_count + 1 %}
+                              {% endif %}
+                            {% endfor %}
+                            {% if vip_count > 0 %}
+                              VIP (${{ '%.2f'|format(b.event.vip_price) }}) × {{ vip_count }}<br>
+                            {% endif %}
+                            {% if general_count > 0 %}
+                              General (${{ '%.2f'|format(b.event.general_price) }}) × {{ general_count }}
+                            {% endif %}
+                          </td>
+                          <td>${{ '%.2f'|format(b.total_price) }}</td>
+                          <td>
+                            {% if b.status == 'approved' %}
+                              <span class="badge bg-success">Accepted</span>
+                            {% elif b.status == 'rejected' %}
+                              <span class="badge bg-danger">Rejected</span>
+                            {% else %}
+                              <span class="badge bg-warning text-dark">Pending</span>
+                            {% endif %}
+                          </td>
+                          <td>
+                            <a href="{{ url_for('event_page', event_id=b.event.id) }}" class="btn btn-sm btn-primary me-1">View Event</a>
+                            {% if b.event._parsed_date >= today and b.status == 'approved' %}
+                            <form method="post"
+                                  action="{{ url_for('cancel_booking', booking_id=b.id) }}"
+                                  onsubmit="return confirm('Are you sure you want to cancel this booking?');"
+                                  style="display:inline;">
+                              <button type="submit" class="btn btn-sm btn-danger text-white">Cancel</button>
+                            </form>
+                            {% endif %}
+                            <a href="{{ url_for('view_ticket', booking_id=b.id) }}" class="btn btn-sm btn-outline-success mt-1">View Ticket</a>
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                </table>
           </div>
           {% else %}
             <div class="text-center py-5">

@@ -34,12 +34,16 @@ class Event(db.Model):
     description   = db.Column(db.Text, nullable=False)
     location      = db.Column(db.String(100), nullable=False)
     date          = db.Column(db.String(50),  nullable=False)
-    price         = db.Column(db.Float,       nullable=False)
+    end_date      = db.Column(db.String(50),  nullable=True)
+    time          = db.Column(db.String(20), nullable=True)  
+    end_time      = db.Column(db.String(20), nullable=True)
+    event_type    = db.Column(db.String(20), nullable=False, default='single')  # 'single' or 'multi'
     guests_limit  = db.Column(db.Integer,     nullable=False) 
     organizer_id  = db.Column(db.Integer,     db.ForeignKey("user.id"), nullable=False)
-   # time          = db.Column(db.String(20), nullable=True)
-   # category      = db.Column(db.String(50), nullable=True)
-  #  image_url     = db.Column(db.String(255), nullable=True)
+    general_price = db.Column(db.Float, nullable=False)
+    vip_price = db.Column(db.Float, nullable=False)
+    category      = db.Column(db.String(50), nullable=True)
+    image_url     = db.Column(db.String(255), nullable=True)
     @property
     def capacity(self):
         return self.guests_limit
@@ -57,14 +61,16 @@ class Booking(db.Model):
 
     id             = db.Column(db.Integer, primary_key=True)
     event_id       = db.Column(db.Integer, db.ForeignKey("event.id"), nullable=False)
-    ticket_code = db.Column(db.String(64), unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
-    ticket_type = db.Column(db.String(50), nullable=True)
     customer_name  = db.Column(db.String(100), nullable=False)
     customer_email = db.Column(db.String(100), nullable=False)
     tickets_qty    = db.Column(db.Integer, default=1)
     payment_method = db.Column(db.String(20))
     timestamp      = db.Column(db.DateTime, default=datetime.utcnow)
     status         = db.Column(db.String(20), default='pending')  
+    total_price    = db.Column(db.Float, nullable=False)
+
+    # Relationship: one booking has many tickets
+    tickets = db.relationship("Ticket", backref="booking", lazy=True, cascade="all, delete-orphan")
 
 # ─── Transaction (for payments, cash‐outs, etc.) ─────────────────────────────
 class Transaction(db.Model):
@@ -79,10 +85,11 @@ class Transaction(db.Model):
     
     # ─── Booking ties a customer into an Event ────────────────────────────────────
 class Ticket(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    ticket_code = db.Column(db.String(100), unique=True, nullable=False)
-    booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
-    ticket_type = db.Column(db.String(50), nullable=False)
-    qr_code_path = db.Column(db.String(200), nullable=True)
+    __tablename__ = 'ticket'
+    id             = db.Column(db.Integer, primary_key=True)
+    booking_id     = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
+    ticket_code    = db.Column(db.String(64), unique=True, nullable=False)
+    ticket_type    = db.Column(db.String(50), nullable=False)
+    qr_code_path   = db.Column(db.String(255))
 
-    booking = db.relationship("Booking", backref="tickets")
+

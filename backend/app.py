@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, date
 
 import os
 import qrcode
+import uuid
 
 try:
     from backend.models import db, User, Event, Booking, Transaction, Ticket
@@ -173,9 +174,11 @@ def account():
     ).order_by(Transaction.date.desc()).all()
     
     total_earnings = sum(
-        b.tickets_qty * b.event.price
+        (b.event.vip_price if t.ticket_type == "VIP" else b.event.general_price)
         for b in bookings
+        for t in b.tickets
     )
+
 
     return render_template(
         'org-dashboard.html',
@@ -332,23 +335,56 @@ def launch_event():
     if current_user.role != 'organizer':
         flash("Only organizers can create events.", "danger")
         return redirect(url_for('home'))
+    
     if request.method == 'POST':
-        event = Event(
-            title        = request.form['title'],
-            description  = request.form['description'],
-            date         = request.form['date_single'],
-            location     = request.form['location'],
-            price        = float(request.form['price']),
-            organizer_id = current_user.id,
-            guests_limit = int(request.form['capacity'])  
-            # time         = request.form['time_single'],
-           # category     = request.form['category'],
-           # image_url    = request.form.get('image_url'),
-        )
-        db.session.add(event)
-        db.session.commit()
-        flash("Event created!", "success")
-        return redirect(url_for('event_page', event_id=event.id))
+        event_type = request.form['event_type']
+        
+        # Handle VIP price (optional)
+        vip_price = None
+        if 'offer_vip' in request.form and request.form.get('vip_price'):
+            vip_price = float(request.form['vip_price'])
+        
+        # Common fields for both event types
+        common_data = {
+            'title': request.form['title'],
+            'description': request.form['description'],
+            'location': request.form['location'],
+            'general_price': float(request.form['general_price']),
+            'vip_price': vip_price,
+            'organizer_id': current_user.id,
+            'guests_limit': int(request.form['capacity']),
+            'event_type': event_type,
+            'category': request.form.get('category'),
+            'image_url': request.form.get('image_url'),
+        }
+        
+        if event_type == 'single':
+            # Single-day event
+            event = Event(
+                date=request.form['date_single'],
+                time=request.form['time_single'],
+                **common_data
+            )
+        else:
+            # Multi-day event
+            event = Event(
+                date=request.form['date_start'],
+                end_date=request.form['date_end'],
+                time=request.form['time_start'],
+                end_time=request.form['time_end'],
+                **common_data
+            )
+        
+        try:
+            db.session.add(event)
+            db.session.commit()
+            flash("Event created successfully!", "success")
+            return redirect(url_for('event_page', event_id=event.id))
+        except Exception as e:
+            db.session.rollback()
+            flash("Error creating event. Please try again.", "danger")
+            return render_template('launch_event.html')
+    
     return render_template('launch_event.html')
 
 @app.route('/delete_event/<int:event_id>', methods=['POST'])
@@ -379,41 +415,45 @@ def event_page(event_id):
 @app.route('/book_event/<int:event_id>', methods=['POST'])
 def book_event(event_id):
     event = Event.query.get_or_404(event_id)
+    general_qty = int(request.form.get('general_qty', 0))
+    vip_qty = int(request.form.get('vip_qty', 0))
+    total_qty = general_qty + vip_qty
+    total_price = (general_qty * event.general_price) + (vip_qty * event.vip_price)
 
-    ticket_type    = request.form['ticket_type']
-    quantity       = int(request.form['ticket_qty'])
     customer_name  = request.form['customer_name']
     customer_email = request.form['customer_email']
     payment_method = request.form['payment_method']
 
+    # Create booking
     booking = Booking(
         event_id       = event.id,
         customer_name  = customer_name,
         customer_email = customer_email,
-        tickets_qty    = quantity,
-        ticket_type    = ticket_type,
-        payment_method=payment_method,
-        status='pending',
+        tickets_qty    = total_qty,
+        payment_method = payment_method,
+        status         = 'pending',
+        total_price = total_price,
     )
     db.session.add(booking)
     db.session.commit()
 
-    # Generate ticket codes & QR codes
-    for i in range(quantity):
-        unique_code = f"{booking.id}-{i+1}-{os.urandom(4).hex()}"
-        qr_path = generate_qr(unique_code)  # implement below
+    # Create individual tickets with correct type + QR code
+    for _ in range(general_qty):
+        code = f"{booking.id}-G-{uuid.uuid4().hex[:6]}"
+        qr_path = generate_qr(code)  # your QR function
+        db.session.add(Ticket(booking_id=booking.id, ticket_type='General', ticket_code=code, qr_code_path=qr_path))
 
-        ticket = Ticket(
-            booking_id = booking.id,
-            ticket_code = unique_code,
-            ticket_type = ticket_type,
-            qr_code_path = qr_path
-        )
-        db.session.add(ticket)
+    for _ in range(vip_qty):
+        code = f"{booking.id}-V-{uuid.uuid4().hex[:6]}"
+        qr_path = generate_qr(code)
+        db.session.add(Ticket(booking_id=booking.id, ticket_type='VIP', ticket_code=code, qr_code_path=qr_path))
+
 
     db.session.commit()
-    flash("Booking confirmed!", "success")
+
+    flash("Booking submitted for approval!", "success")
     return redirect(url_for('event_page', event_id=event.id))
+
 
 @app.route('/approve_booking/<int:booking_id>', methods=['POST'])
 @login_required
@@ -470,17 +510,50 @@ def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
     if current_user.id != event.organizer_id:
         abort(403)
+    
     if request.method == 'POST':
-        event.title       = request.form['title']
+        event_type = request.form['event_type']
+        
+        # Handle VIP price (optional)
+        vip_price = None
+        if 'offer_vip' in request.form and request.form.get('vip_price'):
+            vip_price = float(request.form['vip_price'])
+        
+        # Update common fields
+        event.title = request.form['title']
         event.description = request.form['description']
-        event.date        = request.form['date_single']
-        # event.time        = request.form['time_single']    
-        event.location    = request.form['location']
-        event.price       = float(request.form['price'])
-        event.guests_limit = int(request.form['capacity'])    # capacity -> guests_limit
-        db.session.commit()
-        flash("Event updated!", "success")
-        return redirect(url_for('event_page', event_id=event.id))
+        event.location = request.form['location']
+        event.general_price = float(request.form['general_price'])
+        event.vip_price = vip_price
+        event.guests_limit = int(request.form['capacity'])
+        event.event_type = event_type
+        event.category = request.form.get('category')
+        event.image_url = request.form.get('image_url')
+        
+        # Update date/time fields based on event type
+        if event_type == 'single':
+            # Single-day event
+            event.date = request.form['date_single']
+            event.time = request.form['time_single']
+            # Clear multi-day fields
+            event.end_date = None
+            event.end_time = None
+        else:
+            # Multi-day event
+            event.date = request.form['date_start']
+            event.end_date = request.form['date_end']
+            event.time = request.form['time_start']
+            event.end_time = request.form['time_end']
+        
+        try:
+            db.session.commit()
+            flash("Event updated successfully!", "success")
+            return redirect(url_for('event_page', event_id=event.id))
+        except Exception as e:
+            db.session.rollback()
+            flash("Error updating event. Please try again.", "danger")
+            return render_template('edit_event.html', event=event)
+    
     return render_template('edit_event.html', event=event)
 
 @app.route('/generate_ticket/<int:booking_id>', methods=['POST'])
@@ -559,7 +632,8 @@ def create_test_event(organizer_email):
         description="This is a demo event created on app startup.",
         date=date.today().strftime('%Y-%m-%d'),
         location="Online",
-        price=20.0,
+        general_price=20.0,
+        vip_price=30.0,
         guests_limit=100,
         organizer_id=organizer.id
     )
