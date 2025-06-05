@@ -12,10 +12,10 @@ import qrcode
 import uuid
 
 try:
-    from backend.models import db, User, Event, Booking, Transaction, Ticket
+    from backend.models import db, User, Event, Booking, Transaction, Ticket, Notification
 except ModuleNotFoundError:
     try:
-        from models import db, User, Event, Booking, Transaction, Ticket
+        from models import db, User, Event, Booking, Transaction, Ticket, Notification
     except ModuleNotFoundError as e:
         print("Error: Could not import 'backend.models' or fallback 'models'.")
         raise SystemExit("Fatal: Required models module not found. Exiting.")
@@ -247,12 +247,17 @@ def navigate_user_dashboard():
         else:
             b.event._parsed_date = b.event.date
 
+    # Fetch notifications for inbox
+    notifications = Notification.query.filter_by(recipient_id=current_user.id).order_by(Notification.timestamp.desc()).all()
+
     return render_template(
         'user-dashboard.html',
         user=current_user,
         bookings=user_bookings,
-        today=today
+        today=today,
+        messages=notifications  # <== reuse existing inbox
     )
+
 
 @app.route('/update_payment', methods=['POST'])
 @login_required
@@ -498,8 +503,19 @@ def approve_booking(booking_id):
         event.guests_limit -= booking.tickets_qty
         db.session.commit()
 
+        # ✅ Send notification to the user
+        notif = Notification(
+            recipient_id=booking.customer_id,
+            sender_name=current_user.name,
+            subject=f"Booking Approved: {event.title}",
+            message=f"Your booking for '{event.title}' has been approved by the organizer.",
+        )
+        db.session.add(notif)
+        db.session.commit()
+
     flash("Booking approved successfully", "success")
     return redirect(url_for('navigate_organizer_dashboard') + '#bookings')
+
 
 
 @app.route('/reject_booking/<int:booking_id>', methods=['POST'])
@@ -513,6 +529,17 @@ def reject_booking(booking_id):
 
     booking.status = 'rejected'
     db.session.commit()
+
+    # ✅ Send notification to the user
+    notif = Notification(
+        recipient_id=booking.customer_id,
+        sender_name=current_user.name,
+        subject=f"Booking Rejected: {booking.event.title}",
+        message=f"Unfortunately, your booking for '{booking.event.title}' was rejected by the organizer.",
+    )
+    db.session.add(notif)
+    db.session.commit()
+
     flash("Booking rejected.", "warning")
     return redirect(url_for('navigate_organizer_dashboard') + '#bookings')
 
@@ -540,15 +567,19 @@ def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
     if current_user.id != event.organizer_id:
         abort(403)
-    
+
     if request.method == 'POST':
         event_type = request.form['event_type']
-        
-        # Handle VIP price (optional)
+
+        # Store previous info for NTF-01 status comparison
+        old_date = event.date
+        old_end_date = event.end_date
+
+        # Handle VIP price
         vip_price = None
         if 'offer_vip' in request.form and request.form.get('vip_price'):
             vip_price = float(request.form['vip_price'])
-        
+
         # Update common fields
         event.title = request.form['title']
         event.description = request.form['description']
@@ -559,32 +590,70 @@ def edit_event(event_id):
         event.event_type = event_type
         event.category = request.form.get('category')
         event.image_url = request.form.get('image_url')
-        
-        # Update date/time fields based on event type
+
+        # Update date/time fields
         if event_type == 'single':
-            # Single-day event
             event.date = request.form['date_single']
             event.time = request.form['time_single']
-            # Clear multi-day fields
             event.end_date = None
             event.end_time = None
         else:
-            # Multi-day event
             event.date = request.form['date_start']
             event.end_date = request.form['date_end']
             event.time = request.form['time_start']
             event.end_time = request.form['time_end']
-        
+
         try:
             db.session.commit()
+
+            ### ✅ NOTIFY ALL BOOKED USERS ABOUT CHANGES (NTF-02)
+            booked_users = User.query.join(Booking, Booking.customer_id == User.id)\
+                .filter(Booking.event_id == event.id).distinct().all()
+
+            for user in booked_users:
+                db.session.add(Notification(
+                    recipient_id=user.id,
+                    sender_name=current_user.name,
+                    subject=f"Event Updated: {event.title}",
+                    message=f"The event '{event.title}' has been updated. Please review the latest details.",
+                ))
+
+            ### DETECT & NOTIFY STATUS CHANGES (NTF-01)
+            from datetime import date
+            today = date.today()
+
+            # Check current event status based on dates
+            start_date = datetime.strptime(event.date, "%Y-%m-%d").date()
+            end_date = datetime.strptime(event.end_date, "%Y-%m-%d").date() if event.end_date else start_date
+
+            if today < start_date:
+                status = "Open"
+            elif start_date <= today <= end_date:
+                status = "Running"
+            else:
+                status = "Closed"
+
+            for user in booked_users:
+                db.session.add(Notification(
+                    recipient_id=user.id,
+                    sender_name="System",
+                    subject=f"Event Status: {event.title} is now {status}",
+                    message=f"The event '{event.title}' is now marked as **{status}**. Stay updated via your dashboard.",
+                ))
+
+            db.session.commit()
+
             flash("Event updated successfully!", "success")
             return redirect(url_for('event_page', event_id=event.id))
+
         except Exception as e:
             db.session.rollback()
             flash("Error updating event. Please try again.", "danger")
             return render_template('edit_event.html', event=event)
-    
+
     return render_template('edit_event.html', event=event)
+
+
 
 @app.route('/generate_ticket/<int:booking_id>', methods=['POST'])
 @login_required
