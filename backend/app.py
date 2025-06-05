@@ -440,13 +440,13 @@ def book_event(event_id):
     # Create individual tickets with correct type + QR code
     for _ in range(general_qty):
         code = f"{booking.id}-G-{uuid.uuid4().hex[:6]}"
-        #qr_path = generate_qr(code)  # your QR function
-        #db.session.add(Ticket(booking_id=booking.id, ticket_type='General', ticket_code=code, qr_code_path=qr_path))
+        qr_path = "test"#generate_qr(code)  # your QR function
+        db.session.add(Ticket(booking_id=booking.id, ticket_type='General', ticket_code=code, qr_code_path=qr_path))
 
     for _ in range(vip_qty):
         code = f"{booking.id}-V-{uuid.uuid4().hex[:6]}"
-        #qr_path = generate_qr(code)
-        #db.session.add(Ticket(booking_id=booking.id, ticket_type='VIP', ticket_code=code, qr_code_path=qr_path))
+        qr_path = "test"#generate_qr(code)
+        db.session.add(Ticket(booking_id=booking.id, ticket_type='VIP', ticket_code=code, qr_code_path=qr_path))
 
 
     db.session.commit()
