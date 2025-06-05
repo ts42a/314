@@ -158,16 +158,23 @@ def logout():
     flash("Logged out.", "logout")
     return redirect(url_for('home'))
 
-@app.route('/account')
 @app.route('/org-dashboard.html')
 @login_required
-def account():
+def navigate_organizer_dashboard():
     if current_user.role != 'organizer':
         flash("Access denied.", "danger")
         return redirect(url_for('home'))
-
+    
+    db.session.refresh(current_user)
     events = Event.query.filter_by(organizer_id=current_user.id).all()
-    bookings = Booking.query.join(Event).filter(Event.organizer_id == current_user.id).all()
+    
+    # Query bookings for this organizer's events with customer relationship
+    bookings = Booking.query.join(Event).filter(
+        Event.organizer_id == current_user.id
+    ).outerjoin(User, Booking.customer_id == User.id).options(
+        db.contains_eager(Booking.customer)
+    ).all()
+    
     transactions = Transaction.query.filter(
         (Transaction.event.has(organizer_id=current_user.id)) |
         (Transaction.event_id == None)
@@ -178,50 +185,67 @@ def account():
         for b in bookings
         for t in b.tickets
     )
-
-
+    
     return render_template(
         'org-dashboard.html',
         organizer=current_user,
         events=events,
         bookings=bookings,
         transactions=transactions,
-        total_earnings=total_earnings   
+        total_earnings=total_earnings
     )
-
-
+    
+@app.route('/profile')
+@login_required
+def view_profile():
+    return render_template('profile.html', user=current_user)
+    
 @app.route('/update_profile', methods=['POST'])
 @login_required
 def update_profile():
-    if current_user.role != 'organizer':
-        flash("Access denied.", "danger")
-        return redirect(url_for('home'))
-    current_user.name    = request.form['name']
-    current_user.phone   = request.form.get('phone')
+    old_name = current_user.name  # Store old name
+    
+    current_user.name = request.form['name']
+    current_user.phone = request.form.get('phone')
     current_user.address = request.form.get('address')
+    
+    if current_user.role == 'organizer':
+        current_user.abn = request.form.get('abn')
+        current_user.bank_name = request.form.get('bank_name')
+        current_user.account_number = request.form.get('account_number')
+        current_user.routing_number = request.form.get('routing_number')
+    
+    # Update all existing bookings with the new name
+    if old_name != current_user.name:
+        user_bookings = Booking.query.filter_by(user_id=current_user.id).all()
+        for booking in user_bookings:
+            booking.customer_name = current_user.name
+    
     db.session.commit()
+    db.session.refresh(current_user)
+    
     flash("Profile updated!", "success")
-    # send them back to the right anchor on either dashboard
     anchor = 'profile'
-    return redirect(url_for('account') if current_user.role=='organizer'
-                    else url_for('profile') + f'#{anchor}')
+    return redirect(url_for('navigate_organizer_dashboard') + f'#{anchor}' if current_user.role == 'organizer'
+                    else url_for('navigate_user_dashboard') + f'#{anchor}')
 
-@app.route('/profile')
+@app.route('/user-dashboard.html')
 @login_required
-def profile():
+def navigate_user_dashboard():
     if current_user.role != 'user':
         flash("Access denied.", "danger")
         return redirect(url_for('home'))
 
+    db.session.refresh(current_user)
+
     user_bookings = Booking.query.filter_by(customer_email=current_user.email).all()
     today = date.today()
 
-    # Preprocess event date to real date object
     for b in user_bookings:
         if isinstance(b.event.date, str):
             b.event._parsed_date = datetime.strptime(b.event.date, '%Y-%m-%d').date()
         else:
-            b.event._parsed_date = b.event.date  # fallback if already date
+            b.event._parsed_date = b.event.date
 
     return render_template(
         'user-dashboard.html',
@@ -229,45 +253,50 @@ def profile():
         bookings=user_bookings,
         today=today
     )
+
 @app.route('/update_payment', methods=['POST'])
 @login_required
 def update_payment():
     if current_user.role != 'organizer':
         flash("Access denied.", "danger")
         return redirect(url_for('home'))
+
     current_user.bank_name      = request.form.get('bank_name')
     current_user.account_number = request.form.get('account_number')
     current_user.routing_number = request.form.get('routing_number')
+
     db.session.commit()
     flash("Payment info updated!", "success")
-    return redirect(url_for('account') + '#payment')
 
-@app.route('/manual_booking', methods=['POST'])
-@login_required
-def manual_booking():
-    if current_user.role != 'organizer':
-        flash("Access denied.", "danger")
-        return redirect(url_for('home'))
-    b = Booking(
-        event_id       = request.form['event_id'],
-        customer_name  = request.form['customer_name'],
-        customer_email = request.form['customer_email'],
-        tickets_qty    = int(request.form['tickets_qty']),
-        payment_method = request.form['payment_method']
-    )
-    db.session.add(b)
-    db.session.commit()
+    return redirect(url_for('navigate_organizer_dashboard') + '#payment')
 
-    t = Transaction(
-        event_id = b.event_id,
-        amount   = b.tickets_qty * b.event.price,
-        status   = 'Manual'
-    )
-    db.session.add(t)
-    db.session.commit()
 
-    flash("Manual booking added!", "success")
-    return redirect(url_for('account') + '#bookings')
+#@app.route('/manual_booking', methods=['POST'])
+#@login_required
+#def manual_booking():
+ #   if current_user.role != 'organizer':
+#        flash("Access denied.", "danger")
+ #       return redirect(url_for('home'))
+#    b = Booking(
+#        event_id       = request.form['event_id'],
+ #       customer_name  = request.form['customer_name'],
+ #       customer_email = request.form['customer_email'],
+#        tickets_qty    = int(request.form['tickets_qty']),
+#        payment_method = request.form['payment_method']
+#    )
+ #   db.session.add(b)
+#    db.session.commit()
+
+#    t = Transaction(
+#        event_id = b.event_id,
+#        amount   = b.tickets_qty * b.event.price,
+#        status   = 'Manual'
+#    )
+#    db.session.add(t)
+ #   db.session.commit()
+
+#    flash("Manual booking added!", "success")
+ #   return redirect(url_for('account') + '#bookings')
 
 @app.route('/cancel_booking/<int:booking_id>', methods=['POST'])
 @login_required
@@ -301,8 +330,8 @@ def cancel_booking(booking_id):
 
     # Redirect based on user type
     if current_user.role == 'organizer':
-        return redirect(url_for('account') + '#bookings')
-    return redirect(url_for('profile') + '#bookings')
+        return redirect(url_for('navigate_organizer_dashboard') + '#bookings')
+    return redirect(url_for('navigate_user_dashboard') + '#bookings')
 
 @app.route('/cash_out', methods=['POST'])
 @login_required
@@ -405,7 +434,7 @@ def delete_event(event_id):
     db.session.commit()
 
     flash("Event deleted successfully!", "success")
-    return redirect(url_for('account'))
+    return redirect(url_for('navigate_organizer_dashboard')) 
 
 @app.route('/event/<int:event_id>')
 def event_page(event_id):
@@ -419,38 +448,37 @@ def book_event(event_id):
     vip_qty = int(request.form.get('vip_qty', 0))
     total_qty = general_qty + vip_qty
     total_price = (general_qty * event.general_price) + (vip_qty * event.vip_price)
-
     customer_name  = request.form['customer_name']
     customer_email = request.form['customer_email']
     payment_method = request.form['payment_method']
-
+    
     # Create booking
     booking = Booking(
         event_id       = event.id,
+        user_id        = event.organizer_id,  # Organizer ID
+        customer_id    = current_user.id if current_user.is_authenticated else None,  # Customer ID
         customer_name  = customer_name,
         customer_email = customer_email,
         tickets_qty    = total_qty,
         payment_method = payment_method,
         status         = 'pending',
-        total_price = total_price,
+        total_price    = total_price,
     )
     db.session.add(booking)
     db.session.commit()
-
+    
     # Create individual tickets with correct type + QR code
-    for _ in range(general_qty):
+    for i in range(general_qty):
         code = f"{booking.id}-G-{uuid.uuid4().hex[:6]}"
-        qr_path = generate_qr(code)  # your QR function
+        qr_path = generate_qr(code)
         db.session.add(Ticket(booking_id=booking.id, ticket_type='General', ticket_code=code, qr_code_path=qr_path))
-
-    for _ in range(vip_qty):
+    
+    for i in range(vip_qty):
         code = f"{booking.id}-V-{uuid.uuid4().hex[:6]}"
         qr_path = generate_qr(code)
         db.session.add(Ticket(booking_id=booking.id, ticket_type='VIP', ticket_code=code, qr_code_path=qr_path))
-
-
+    
     db.session.commit()
-
     flash("Booking submitted for approval!", "success")
     return redirect(url_for('event_page', event_id=event.id))
 
@@ -462,7 +490,7 @@ def approve_booking(booking_id):
     event = booking.event
 
     # Only allow organizer
-    if current_user.id != event.organizer_id:
+    if current_user.role != 'organizer' or current_user.id != event.organizer_id:
         abort(403)
 
     if booking.status != 'approved':
@@ -471,7 +499,7 @@ def approve_booking(booking_id):
         db.session.commit()
 
     flash("Booking approved successfully", "success")
-    return redirect(url_for('account') + '#bookings')
+    return redirect(url_for('navigate_organizer_dashboard') + '#bookings')
 
 
 @app.route('/reject_booking/<int:booking_id>', methods=['POST'])
@@ -479,13 +507,15 @@ def approve_booking(booking_id):
 def reject_booking(booking_id):
     booking = Booking.query.get_or_404(booking_id)
 
+    # Authorization check for organizer
     if current_user.role != 'organizer' or booking.event.organizer_id != current_user.id:
         abort(403)
 
     booking.status = 'rejected'
     db.session.commit()
     flash("Booking rejected.", "warning")
-    return redirect(url_for('account') + '#bookings')
+    return redirect(url_for('navigate_organizer_dashboard') + '#bookings')
+
     
     
 @app.route('/add-to-calendar/<int:event_id>')
@@ -573,11 +603,13 @@ def generate_ticket(booking_id):
 @login_required
 def view_ticket(booking_id):
     booking = Booking.query.get_or_404(booking_id)
-    
-    # Organizer approval check
+
+    # Booking must be approved
     if booking.status != 'approved':
         flash("This booking has not been approved yet.", "danger")
-        return redirect(url_for('profile'))
+        if current_user.role == 'organizer':
+            return redirect(url_for('navigate_organizer_dashboard') + '#bookings')
+        return redirect(url_for('navigate_user_dashboard') + '#bookings')
 
     # Authorization check
     if current_user.role == 'user' and booking.customer_email != current_user.email:
