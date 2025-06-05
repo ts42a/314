@@ -9,6 +9,54 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
+  <script>
+      function hideSigninError() {
+        document.getElementById("signin-error")?.remove();
+      }
+
+      function hideSignupError() {
+        document.getElementById("signup-error")?.remove();
+      }
+
+      function setUserType(type) {
+        const userForm = document.getElementById("userSignUpForm");
+        const orgForm = document.getElementById("organizerSignUpForm");
+        if (type === "user") {
+          userForm.style.display = "block";
+          orgForm.style.display = "none";
+        } else {
+          userForm.style.display = "none";
+          orgForm.style.display = "block";
+        }
+      }
+
+      function setSignInType(type) {
+        const userForm = document.getElementById("userSignInForm");
+        const orgForm = document.getElementById("organizerSignInForm");
+        if (type === "user") {
+          userForm.style.display = "block";
+          orgForm.style.display = "none";
+        } else {
+          userForm.style.display = "none";
+          orgForm.style.display = "block";
+        }
+      }
+
+      // Flash-based modal auto-show logic
+      document.addEventListener("DOMContentLoaded", function () {
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+            {% if category == 'signin' %}
+              const signinModal = new bootstrap.Modal(document.getElementById('signInModal'));
+              signinModal.show();
+            {% elif category == 'signup' %}
+              const signupModal = new bootstrap.Modal(document.getElementById('signupModal'));
+              signupModal.show();
+            {% endif %}
+          {% endfor %}
+        {% endwith %}
+      });
+  </script>
 
 <body>
     <!-- Navigation Bar -->
@@ -46,22 +94,18 @@
       </ul>
 
       <div>
-        {% if current_user.is_authenticated %}
-          <a class="btn btn-outline-light"
-             href="{{ url_for('account') }}">ACCOUNT</a>
-        {% else %}
-          <button class="btn btn-light me-2"
-                  data-bs-toggle="modal"
-                  data-bs-target="#signInModal">
-            SIGN IN
-          </button>
-          <button class="btn btn-outline-light"
-                  data-bs-toggle="modal"
-                  data-bs-target="#signupModal">
-            SIGN UP
-          </button>
-        {% endif %}
-      </div>
+            {% if current_user.is_authenticated %}
+              {% if current_user.role == 'organizer' %}
+                <a class="btn btn-outline-light" href="{{ url_for('navigate_organizer_dashboard') }}">ACCOUNT</a>
+              {% else %}
+                <a class="btn btn-outline-light" href="{{ url_for('navigate_user_dashboard') }}">ACCOUNT</a>
+              {% endif %}
+            {% else %}
+              <button class="btn btn-light me-2" data-bs-toggle="modal" data-bs-target="#signInModal">SIGN IN</button>
+              <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#signupModal">SIGN UP</button>
+            {% endif %}
+    </div>
+
     </div>
   </div>
 </nav>

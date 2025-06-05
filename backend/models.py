@@ -58,8 +58,9 @@ class Event(db.Model):
 # ─── Booking ties a customer into an Event ────────────────────────────────────
 class Booking(db.Model):
     __tablename__ = "booking"
-
     id             = db.Column(db.Integer, primary_key=True)
+    user_id        = db.Column(db.Integer, db.ForeignKey('user.id'))  # Organizer ID
+    customer_id    = db.Column(db.Integer, db.ForeignKey('user.id'))  # Customer ID 
     event_id       = db.Column(db.Integer, db.ForeignKey("event.id"), nullable=False)
     customer_name  = db.Column(db.String(100), nullable=False)
     customer_email = db.Column(db.String(100), nullable=False)
@@ -68,9 +69,11 @@ class Booking(db.Model):
     timestamp      = db.Column(db.DateTime, default=datetime.utcnow)
     status         = db.Column(db.String(20), default='pending')  
     total_price    = db.Column(db.Float, nullable=False)
-
-    # Relationship: one booking has many tickets
+    
+    # Relationships
     tickets = db.relationship("Ticket", backref="booking", lazy=True, cascade="all, delete-orphan")
+    organizer = db.relationship('User', foreign_keys=[user_id], backref='organized_bookings', lazy=True)
+    customer = db.relationship('User', foreign_keys=[customer_id], backref='customer_bookings', lazy=True)
 
 # ─── Transaction (for payments, cash‐outs, etc.) ─────────────────────────────
 class Transaction(db.Model):
