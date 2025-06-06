@@ -47,12 +47,12 @@
 
       <div>
         {% if current_user.is_authenticated %}
-          <!-- Show account/profile buttons when logged in -->
-          {% if current_user.role == 'organizer' %}
-             <a class="btn btn-outline-light" href="{{ url_for('account') }}">ACCOUNT</a>
-          {% else %}
-             <a class="btn btn-outline-light" href="{{ url_for('profile') }}">ACCOUNT</a>
-          {% endif %}
+          <!-- Show account button when logged in -->
+        {% if current_user.role == 'organizer' %}
+                <a class="btn btn-outline-light"     href="{{ url_for('navigate_organizer_dashboard') }}">ACCOUNT</a>
+              {% else %}
+                <a class="btn btn-outline-light" href="{{ url_for('navigate_user_dashboard') }}">ACCOUNT</a>
+        {% endif %}
           <!-- logout button -->
           <a class="btn btn-light" href="{{ url_for('logout') }}">LOG&nbsp;OUT</a>
         {% else %}

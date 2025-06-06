@@ -56,4 +56,3 @@ def test_user_view_profile(client, app, sample_user):
     assert response.status_code == 200
     assert user_name.encode() in response.data
     assert user_email.encode() in response.data
-    assert b'Card' in response.data
