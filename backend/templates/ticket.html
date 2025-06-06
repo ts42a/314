@@ -35,43 +35,45 @@
                 <p><strong>Payment Method:</strong> {{ booking.payment_method }}</p>
 
                 <hr>
-                <h5 class="text-center mt-4 mb-3">QR Code(s)</h5>
-                <div class="row justify-content-center">
-                    {% for ticket in booking.tickets %}
-                        <div class="col-6 col-md-4 text-center mb-4">
+<h5 class="text-center mt-4 mb-3">QR Code(s)</h5>
+<div class="row justify-content-center">
+    {% for ticket in booking.tickets %}
+        <div class="col-6 col-md-4 text-center mb-4">
+            <!-- QR Code -->
+            <img src="../static/qr/1-1-2c250eac.png"
+                 alt="QR Code"
+                 class="img-fluid img-thumbnail"
+                 style="max-width: 180px;">
 
-                            <img src="../static/qr/1-1-2c250eac.png"
-     alt="QR Code" class="img-fluid img-thumbnail" style="max-width: 180px;">
-                            <div><span class="badge bg-secondary">{{ ticket.ticket_type }}</span></div>
-                        </div>
+            <!-- Ticket Type -->
+            <div class="mt-2">
+                <span class="badge bg-secondary">{{ ticket.ticket_type }}</span>
+            </div>
 
-    <img src="{{ url_for('static', filename=ticket.qr_code_path) }}"
-         alt="QR Code" class="img-fluid img-thumbnail" style="max-width: 180px;">
-    <div class="mt-2"><small>{{ ticket.ticket_code }}</small></div>
-    <div><span class="badge bg-secondary">{{ ticket.ticket_type }}</span></div>
-    <div class="mt-1">
-        {% if ticket.status == 'Active' %}
-            <span class="badge bg-success">Active</span>
-        {% elif ticket.status == 'Expired' %}
-            <span class="badge bg-dark">Expired</span>
-        {% elif ticket.status == 'Checked-In' %}
-            <span class="badge bg-info text-dark">Checked-In</span>
-        {% elif ticket.status == 'Refunding' %}
-            <span class="badge bg-warning text-dark">Refunding</span>
-        {% elif ticket.status == 'Refunded' %}
-            <span class="badge bg-danger">Refunded</span>
-        {% else %}
-            <span class="badge bg-secondary">Unknown</span>
-        {% endif %}
-    </div>
+            <!-- Ticket Status -->
+            <div class="mt-1">
+                {% if ticket.status == 'Active' %}
+                    <span class="badge bg-success">Active</span>
+                {% elif ticket.status == 'Expired' %}
+                    <span class="badge bg-dark">Expired</span>
+                {% elif ticket.status == 'Checked-In' %}
+                    <span class="badge bg-info text-dark">Checked-In</span>
+                {% elif ticket.status == 'Refunding' %}
+                    <span class="badge bg-warning text-dark">Refunding</span>
+                {% elif ticket.status == 'Refunded' %}
+                    <span class="badge bg-danger">Refunded</span>
+                {% else %}
+                    <span class="badge bg-secondary">Unknown</span>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
 </div>
 
 
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
+   
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
