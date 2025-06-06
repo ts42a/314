@@ -9,7 +9,8 @@ It is a lightweight event booking system built using Flask, Bootstrap, and SQLit
 `cd 314
 
 ### 2. Create Python Virtual Environment ( on your own preferences )
-python -m venv .venv
+`python -m venv .venv
+
 ### 3. Activate the Virtual Environment 
 ## For Linux user,
 source .venv/bin/activate       
