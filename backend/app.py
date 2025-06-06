@@ -41,7 +41,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # Helper Functions
-def generate_qr(data, folder="static/qr"):
+def generate_qr(data, folder="/qr"):
     os.makedirs(folder, exist_ok=True)
     relative_path = f"qr/{data}.png"
     full_path = os.path.join(folder, f"{data}.png")
@@ -207,10 +207,12 @@ def view_profile():
 @app.route('/update_profile', methods=['POST'])
 @login_required
 def update_profile():
+
     old_name = current_user.name  # Store old name
     
     current_user.name = request.form['name']
     current_user.phone = request.form.get('phone')
+
     current_user.address = request.form.get('address')
     
     if current_user.role == 'organizer':
@@ -244,6 +246,7 @@ def navigate_user_dashboard():
 
     user_bookings = Booking.query.filter_by(customer_email=current_user.email).all()
     today = date.today()
+    total_spent = sum(b.total_price for b in user_bookings if b.status == 'approved')
 
     for b in user_bookings:
         if isinstance(b.event.date, str):
@@ -259,7 +262,9 @@ def navigate_user_dashboard():
         user=current_user,
         bookings=user_bookings,
         today=today,
+        total_spent=total_spent,
         messages=notifications  # <== reuse existing inbox
+
     )
 
 
@@ -479,12 +484,14 @@ def book_event(event_id):
     # Create individual tickets with correct type + QR code
     for i in range(general_qty):
         code = f"{booking.id}-G-{uuid.uuid4().hex[:6]}"
-        qr_path = generate_qr(code)
+
+        qr_path = "qr/test.png"#generate_qr(code)  # your QR function
+
         db.session.add(Ticket(booking_id=booking.id, ticket_type='General', ticket_code=code, qr_code_path=qr_path))
     
     for i in range(vip_qty):
         code = f"{booking.id}-V-{uuid.uuid4().hex[:6]}"
-        qr_path = generate_qr(code)
+        qr_path = "qr/test.png"#generate_qr(code)
         db.session.add(Ticket(booking_id=booking.id, ticket_type='VIP', ticket_code=code, qr_code_path=qr_path))
     
     db.session.commit()

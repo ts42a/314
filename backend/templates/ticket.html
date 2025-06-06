@@ -39,6 +39,12 @@
                 <div class="row justify-content-center">
                     {% for ticket in booking.tickets %}
                         <div class="col-6 col-md-4 text-center mb-4">
+
+                            <img src="../static/qr/1-1-2c250eac.png"
+     alt="QR Code" class="img-fluid img-thumbnail" style="max-width: 180px;">
+                            <div><span class="badge bg-secondary">{{ ticket.ticket_type }}</span></div>
+                        </div>
+
     <img src="{{ url_for('static', filename=ticket.qr_code_path) }}"
          alt="QR Code" class="img-fluid img-thumbnail" style="max-width: 180px;">
     <div class="mt-2"><small>{{ ticket.ticket_code }}</small></div>
@@ -59,6 +65,7 @@
         {% endif %}
     </div>
 </div>
+
 
                     {% endfor %}
                 </div>
