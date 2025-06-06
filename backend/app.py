@@ -494,54 +494,58 @@ def approve_booking(booking_id):
     booking = Booking.query.get_or_404(booking_id)
     event = booking.event
 
-    # Only allow organizer
-    if current_user.role != 'organizer' or current_user.id != event.organizer_id:
+    # Ensure current user is the organizer
+    if current_user.id != event.organizer_id:
         abort(403)
 
-    if booking.status != 'approved':
+    if event.guests_limit >= booking.tickets_qty:
         booking.status = 'approved'
         event.guests_limit -= booking.tickets_qty
+
+        # Create notification for customer
+        if booking.customer_id:
+            notif = Notification(
+                recipient_id=booking.customer_id,
+                sender_name=current_user.name,
+                subject="Booking Approved",
+                message=f"Your booking for '{event.title}' has been approved. See you there!",
+            )
+            db.session.add(notif)
+
         db.session.commit()
+        flash('Booking approved and user notified.', 'success')
+    else:
+        flash('Not enough spots available to approve this booking.', 'danger')
 
-        # ✅ Send notification to the user
-        notif = Notification(
-            recipient_id=booking.customer_id,
-            sender_name=current_user.name,
-            subject=f"Booking Approved: {event.title}",
-            message=f"Your booking for '{event.title}' has been approved by the organizer.",
-        )
-        db.session.add(notif)
-        db.session.commit()
-
-    flash("Booking approved successfully", "success")
-    return redirect(url_for('navigate_organizer_dashboard') + '#bookings')
-
+    return redirect(url_for('navigate_organizer_dashboard'))
 
 
 @app.route('/reject_booking/<int:booking_id>', methods=['POST'])
 @login_required
 def reject_booking(booking_id):
     booking = Booking.query.get_or_404(booking_id)
+    event = booking.event
 
-    # Authorization check for organizer
-    if current_user.role != 'organizer' or booking.event.organizer_id != current_user.id:
+    # Ensure current user is the organizer
+    if current_user.id != event.organizer_id:
         abort(403)
 
     booking.status = 'rejected'
-    db.session.commit()
 
-    # ✅ Send notification to the user
-    notif = Notification(
-        recipient_id=booking.customer_id,
-        sender_name=current_user.name,
-        subject=f"Booking Rejected: {booking.event.title}",
-        message=f"Unfortunately, your booking for '{booking.event.title}' was rejected by the organizer.",
-    )
-    db.session.add(notif)
-    db.session.commit()
+    # Create notification for customer
+    if booking.customer_id:
+        notif = Notification(
+            recipient_id=booking.customer_id,
+            sender_name=current_user.name,
+            subject="Booking Rejected",
+            message=f"Unfortunately, your booking for '{event.title}' was rejected. Please contact the organizer if you need more info.",
+        )
+        db.session.add(notif)
 
-    flash("Booking rejected.", "warning")
-    return redirect(url_for('navigate_organizer_dashboard') + '#bookings')
+    db.session.commit()
+    flash('Booking rejected and user notified.', 'warning')
+    return redirect(url_for('navigate_organizer_dashboard'))
+
 
     
     
