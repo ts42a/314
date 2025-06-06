@@ -4,8 +4,7 @@ It is a lightweight event booking system built using Flask, Bootstrap, and SQLit
 
 ## Installation
 ### 1. Clone This Repo
-`git clone https://github.com/ts42a/314.git
-
+`git clone https://github.com/ts42a/314.git\
 `cd 314
 
 ### 2. Create Python Virtual Environment ( on your own preferences )
