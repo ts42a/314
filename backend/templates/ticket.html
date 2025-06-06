@@ -2,76 +2,126 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Ticket</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Bootstrap CSS and Icons -->
+    <title>Ticket</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
-<body>
 
-    <!-- Header -->
-    <nav class="navbar navbar-light bg-light shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold text-primary" href="{{ url_for('home') }}">
-                <i class="fas fa-ticket-alt me-2"></i>EasyBooking
-            </a>
-        </div>
-    </nav>
+<body>
+    <!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg padding_y">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{{ url_for('home') }}">
+      <img src="{{ url_for('static', filename='img/logo-w.svg') }}" alt="LOGO" style="width:50%;">
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav mx-auto">
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint=='home' %}active{% endif %}"
+             href="{{ url_for('home') }}">HOME</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint=='discover' %}active{% endif %}"
+             href="{{ url_for('discover') }}">DISCOVER</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint=='news' %}active{% endif %}"
+             href="{{ url_for('news') }}">NEWS</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint=='about' %}active{% endif %}"
+             href="{{ url_for('about') }}">ABOUT US</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint=='blogs' %}active{% endif %}"
+             href="{{ url_for('blogs') }}">BLOGS</a>
+        </li>
+      </ul>
+
+      <div>
+        {% if current_user.is_authenticated %}
+          <!-- Show account button when logged in -->
+        {% if current_user.role == 'organizer' %}
+                <a class="btn btn-outline-light"     href="{{ url_for('navigate_organizer_dashboard') }}">ACCOUNT</a>
+              {% else %}
+                <a class="btn btn-outline-light" href="{{ url_for('navigate_user_dashboard') }}">ACCOUNT</a>
+        {% endif %}
+          <!-- logout button -->
+          <a class="btn btn-light" href="{{ url_for('logout') }}">LOG&nbsp;OUT</a>
+        {% else %}
+          <!-- Show sign in/sign up buttons when NOT logged in -->
+          <button class="btn btn-light me-2"
+                  data-bs-toggle="modal"
+                  data-bs-target="#signInModal">
+            SIGN IN
+          </button>
+          <button class="btn btn-outline-light"
+                  data-bs-toggle="modal"
+                  data-bs-target="#signupModal">
+            SIGN UP
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
 
     <!-- Ticket Content -->
     <div class="container my-5">
-        <div class="card shadow-lg mx-auto" style="max-width: 600px;">
+        <div class="card shadow-lg mx-auto" style="max-width: 700px;">
             <div class="card-body">
-                <!-- <div class="alert alert-success text-center">Ticket generated successfully!</div>-->
                 <h3 class="card-title text-center text-primary mb-4">My Ticket</h3>
                 <hr>
-                <p><strong>Event:</strong> {{ booking.event.title }}</p>
-                <p><strong>Date:</strong> {{ booking.event.date }}</p>
-                <p><strong>Location:</strong> {{ booking.event.location }}</p>
-                <p><strong>Customer:</strong> {{ booking.customer_name }}</p>
-                <p><strong>Tickets:</strong> {{ booking.tickets_qty }}</p>
-                <p><strong>Payment Method:</strong> {{ booking.payment_method }}</p>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <p><strong>Event:</strong> {{ booking.event.title }}</p>
+                        <p><strong>Date:</strong> {{ booking.event.date }}</p>
+                        <p><strong>Location:</strong> {{ booking.event.location }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p><strong>Customer:</strong> {{ booking.customer_name }}</p>
+                        <p><strong>Tickets:</strong> {{ booking.tickets_qty }}</p>
+                        <p><strong>Payment Method:</strong> {{ booking.payment_method }}</p>
+                    </div>
+                </div>
 
                 <hr>
                 <h5 class="text-center mt-4 mb-3">QR Code(s)</h5>
                 <div class="row justify-content-center">
                     {% for ticket in booking.tickets %}
                         <div class="col-6 col-md-4 text-center mb-4">
-
-                            <img src="../static/qr/1-1-2c250eac.png"
-     alt="QR Code" class="img-fluid img-thumbnail" style="max-width: 180px;">
+                            <img src="{{ url_for('static', filename=ticket.qr_code_path) }}" alt="QR Code" class="img-fluid img-thumbnail" style="max-width: 180px;">
+                            <div class="mt-2"><small>{{ ticket.ticket_code }}</small></div>
                             <div><span class="badge bg-secondary">{{ ticket.ticket_type }}</span></div>
+                            <div class="mt-1">
+                                {% if ticket.status == 'Active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif ticket.status == 'Expired' %}
+                                    <span class="badge bg-dark">Expired</span>
+                                {% elif ticket.status == 'Checked-In' %}
+                                    <span class="badge bg-info text-dark">Checked-In</span>
+                                {% elif ticket.status == 'Refunding' %}
+                                    <span class="badge bg-warning text-dark">Refunding</span>
+                                {% elif ticket.status == 'Refunded' %}
+                                    <span class="badge bg-danger">Refunded</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Unknown</span>
+                                {% endif %}
+                            </div>
                         </div>
-
-    <img src="{{ url_for('static', filename=ticket.qr_code_path) }}"
-         alt="QR Code" class="img-fluid img-thumbnail" style="max-width: 180px;">
-    <div class="mt-2"><small>{{ ticket.ticket_code }}</small></div>
-    <div><span class="badge bg-secondary">{{ ticket.ticket_type }}</span></div>
-    <div class="mt-1">
-        {% if ticket.status == 'Active' %}
-            <span class="badge bg-success">Active</span>
-        {% elif ticket.status == 'Expired' %}
-            <span class="badge bg-dark">Expired</span>
-        {% elif ticket.status == 'Checked-In' %}
-            <span class="badge bg-info text-dark">Checked-In</span>
-        {% elif ticket.status == 'Refunding' %}
-            <span class="badge bg-warning text-dark">Refunding</span>
-        {% elif ticket.status == 'Refunded' %}
-            <span class="badge bg-danger">Refunded</span>
-        {% else %}
-            <span class="badge bg-secondary">Unknown</span>
-        {% endif %}
-    </div>
-</div>
-
-
                     {% endfor %}
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -12,10 +12,10 @@ import qrcode
 import uuid
 
 try:
-    from backend.models import db, User, Event, Booking, Transaction, Ticket, Notification
+    from backend.models import db, User, Event, Booking, Transaction, Ticket, Notification, Card
 except ModuleNotFoundError:
     try:
-        from models import db, User, Event, Booking, Transaction, Ticket, Notification
+        from models import db, User, Event, Booking, Transaction, Ticket, Notification, Card
     except ModuleNotFoundError as e:
         print("Error: Could not import 'backend.models' or fallback 'models'.")
         raise SystemExit("Fatal: Required models module not found. Exiting.")
@@ -254,8 +254,10 @@ def navigate_user_dashboard():
         else:
             b.event._parsed_date = b.event.date
 
-    # Fetch notifications for inbox
     notifications = Notification.query.filter_by(recipient_id=current_user.id).order_by(Notification.timestamp.desc()).all()
+
+    transactions = Transaction.query.join(Booking, Transaction.event_id == Booking.event_id)\
+                    .filter(Booking.customer_email == current_user.email).all()
 
     return render_template(
         'user-dashboard.html',
@@ -263,8 +265,8 @@ def navigate_user_dashboard():
         bookings=user_bookings,
         today=today,
         total_spent=total_spent,
-        messages=notifications  # <== reuse existing inbox
-
+        messages=notifications,
+        transactions=transactions
     )
 
 
@@ -456,47 +458,62 @@ def event_page(event_id):
     return render_template('event.html', event=event)
 
 @app.route('/book_event/<int:event_id>', methods=['POST'])
+@login_required
 def book_event(event_id):
     event = Event.query.get_or_404(event_id)
+
     general_qty = int(request.form.get('general_qty', 0))
-    vip_qty = int(request.form.get('vip_qty', 0))
-    total_qty = general_qty + vip_qty
+    vip_qty = int(request.form.get('vip_qty', 0)) if request.form.get('vip_qty') else 0
+
     total_price = (general_qty * event.general_price) + (vip_qty * event.vip_price)
-    customer_name  = request.form['customer_name']
-    customer_email = request.form['customer_email']
-    payment_method = request.form['payment_method']
-    
-    # Create booking
+
+    if general_qty == 0 and vip_qty == 0:
+        flash("You must select at least one ticket.", "warning")
+        return redirect(url_for('event_page', event_id=event.id))
+
+    # Payment method validation
+    card_option = request.form.get('card_option')
+    if card_option == 'saved':
+        card_id = int(request.form.get('saved_card_id', 0))
+        cvv = request.form.get('saved_card_cvv', '').strip()
+        card = Card.query.filter_by(id=card_id, user_id=current_user.id).first()
+        if not card or not cvv:
+            flash("Invalid saved card or CVV.", "danger")
+            return redirect(url_for('event_page', event_id=event.id))
+    elif card_option == 'new':
+        if not request.form.get('new_card_number') or not request.form.get('new_cvv'):
+            flash("Missing new card information.", "danger")
+            return redirect(url_for('event_page', event_id=event.id))
+    else:
+        flash("Select a valid payment option.", "danger")
+        return redirect(url_for('event_page', event_id=event.id))
+
+    # Create pending booking
     booking = Booking(
-        event_id       = event.id,
-        user_id        = event.organizer_id,  # Organizer ID
-        customer_id    = current_user.id if current_user.is_authenticated else None,  # Customer ID
-        customer_name  = customer_name,
-        customer_email = customer_email,
-        tickets_qty    = total_qty,
-        payment_method = payment_method,
-        status         = 'pending',
-        total_price    = total_price,
+        user_id=current_user.id,
+        customer_id=current_user.id,
+        customer_name=current_user.name,
+        customer_email=current_user.email,
+        event_id=event.id,
+        tickets_qty=general_qty + vip_qty,
+        payment_method=card_option,
+        total_price=total_price,
+        status='pending'  # ← Wait for organizer approval
     )
     db.session.add(booking)
-    db.session.commit()
-    
-    # Create individual tickets with correct type + QR code
-    for i in range(general_qty):
-        code = f"{booking.id}-G-{uuid.uuid4().hex[:6]}"
 
-        qr_path = "qr/test.png"#generate_qr(code)  # your QR function
+    # Create transaction record (not completed yet)
+    transaction = Transaction(
+        event_id=event.id,
+        amount=total_price,
+        status='pending'
+    )
+    db.session.add(transaction)
 
-        db.session.add(Ticket(booking_id=booking.id, ticket_type='General', ticket_code=code, qr_code_path=qr_path))
-    
-    for i in range(vip_qty):
-        code = f"{booking.id}-V-{uuid.uuid4().hex[:6]}"
-        qr_path = "qr/test.png"#generate_qr(code)
-        db.session.add(Ticket(booking_id=booking.id, ticket_type='VIP', ticket_code=code, qr_code_path=qr_path))
-    
     db.session.commit()
-    flash("Booking submitted for approval!", "success")
-    return redirect(url_for('event_page', event_id=event.id))
+
+    flash("Booking submitted. Awaiting organizer confirmation.", "info")
+    return redirect(url_for('navigate_user_dashboard'))
 
 
 @app.route('/approve_booking/<int:booking_id>', methods=['POST'])
@@ -505,7 +522,6 @@ def approve_booking(booking_id):
     booking = Booking.query.get_or_404(booking_id)
     event = booking.event
 
-    # Ensure current user is the organizer
     if current_user.id != event.organizer_id:
         abort(403)
 
@@ -513,20 +529,39 @@ def approve_booking(booking_id):
         booking.status = 'approved'
         event.guests_limit -= booking.tickets_qty
 
-        # Create notification for customer
+        # Create real QR codes for each ticket
+        for i in range(booking.tickets_qty):
+            ticket_code = str(uuid.uuid4())[:12]
+            qr_img = qrcode.make(ticket_code)
+
+            filename = f"qr_{booking.id}_{i}.png"
+            folder_path = os.path.join("static", "qr")
+            os.makedirs(folder_path, exist_ok=True)
+            qr_path = os.path.join(folder_path, filename)
+            qr_img.save(qr_path)
+
+            ticket = Ticket(
+                booking_id=booking.id,
+                ticket_code=ticket_code,
+                ticket_type="VIP" if "vip" in booking.payment_method.lower() else "General",
+                qr_code_path=f"qr/{filename}",
+                status='Active'
+            )
+            db.session.add(ticket)
+
+        # Send notification
         if booking.customer_id:
-            notif = Notification(
+            db.session.add(Notification(
                 recipient_id=booking.customer_id,
                 sender_name=current_user.name,
                 subject="Booking Approved",
-                message=f"Your booking for '{event.title}' has been approved. See you there!",
-            )
-            db.session.add(notif)
+                message=f"Your booking for '{event.title}' has been approved. Your tickets are now available."
+            ))
 
         db.session.commit()
-        flash('Booking approved and user notified.', 'success')
+        flash("Booking approved and tickets generated.", "success")
     else:
-        flash('Not enough spots available to approve this booking.', 'danger')
+        flash("Not enough spots available to approve this booking.", "danger")
 
     return redirect(url_for('navigate_organizer_dashboard'))
 
@@ -779,6 +814,51 @@ def debug_routes():
     for rule in app.url_map.iter_rules():
         routes.append(f"{rule.rule} -> {rule.endpoint} ({rule.methods})")
     return "<br>".join(routes)
+
+
+#payment methods
+@app.route('/add_card', methods=['POST'])
+@login_required
+def add_card():
+    number = request.form['card_number'].strip().replace(" ", "")
+    card = Card(
+        user_id=current_user.id,
+        cardholder_name=request.form['cardholder_name'],
+        last4=number[-4:],
+        expiry_month=int(request.form['expiry_month']),
+        expiry_year=int(request.form['expiry_year'])
+    )
+    db.session.add(card)
+    db.session.commit()
+    flash("Card added successfully!", "success")
+    return redirect(url_for('navigate_user_dashboard') + "#payments")
+
+@app.route('/edit_card/<int:card_id>', methods=['POST'])
+@login_required
+def edit_card(card_id):
+    card = Card.query.get_or_404(card_id)
+    if card.user_id != current_user.id:
+        abort(403)
+    card.cardholder_name = request.form['cardholder_name']
+    card.expiry_month = int(request.form['expiry_month'])
+    card.expiry_year = int(request.form['expiry_year'])
+    db.session.commit()
+    flash("Card updated.", "success")
+    return redirect(url_for('navigate_user_dashboard') + "#payments")
+
+
+@app.route('/delete_card/<int:card_id>', methods=['POST'])
+@login_required
+def delete_card(card_id):
+    card = Card.query.get_or_404(card_id)
+    if card.user_id != current_user.id:
+        abort(403)
+    db.session.delete(card)
+    db.session.commit()
+    flash("Card deleted.", "success")
+    return redirect(url_for('navigate_user_dashboard') + "#payments")
+
+
 
 
 # -----------------------

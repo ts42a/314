@@ -180,28 +180,27 @@
       </div>
     {% endif %}
   </div>
-
-  <!-- BOOKING MODAL -->
-  <div class="modal fade" id="bookTicketModal" tabindex="-1" aria-labelledby="bookTicketModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <form action="{{ url_for('book_event', event_id=event.id) }}" method="post" class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="bookTicketModalLabel">Book Tickets</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-<div class="modal-body">
-
-    {% if current_user.is_authenticated %}
-      <input type="hidden" name="customer_name" value="{{ current_user.name }}">
-      <input type="hidden" name="customer_email" value="{{ current_user.email }}">
-      <div class="mb-3">
-        <label class="form-label">Name</label>
-        <input type="text" class="form-control" value="{{ current_user.name }}" disabled>
+<!-- Updated BOOKING MODAL -->
+<div class="modal fade" id="bookTicketModal" tabindex="-1" aria-labelledby="bookTicketModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="{{ url_for('book_event', event_id=event.id) }}" method="post" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="bookTicketModalLabel">Book Tickets</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input type="email" class="form-control" value="{{ current_user.email }}" disabled>
-      </div>
+      <div class="modal-body">
+
+        {% if current_user.is_authenticated %}
+          <input type="hidden" name="customer_name" value="{{ current_user.name }}">
+          <input type="hidden" name="customer_email" value="{{ current_user.email }}">
+          <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" value="{{ current_user.name }}" disabled>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" value="{{ current_user.email }}" disabled>
+          </div>
         {% else %}
           <div class="mb-3">
             <label class="form-label">Your Name</label>
@@ -213,42 +212,88 @@
           </div>
         {% endif %}
 
-      <div class="mb-3">
-        <label class="form-label">General Tickets ($<span style="color: black;">{{ event.general_price }}</span>)</label>
-        <input type="number" name="general_qty" id="generalQty" class="form-control" min="0" value="0" onchange="calculateTotal()">
-      </div>
-
-      <div class="form-check mb-2">
-        <input class="form-check-input" type="checkbox" id="enableVip" onchange="toggleVipInput(); calculateTotal();">
-        <label class="form-check-label" for="enableVip">
-          Include VIP Tickets ($<span style="color: black;">{{ event.vip_price }}</span>)
-        </label>
-      </div>
-
-      <div class="mb-3" id="vipTicketSection" style="display: none;">
-        <label class="form-label">VIP Tickets</label>
-        <input type="number" name="vip_qty" id="vipQty" class="form-control" min="0" value="0" onchange="calculateTotal()">
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Total Price ($)</label>
-        <input type="text" id="totalPriceDisplay" class="form-control" readonly value="0.00">
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Payment</label>
-        <select name="payment_method" class="form-select" required>
-          <option value="stripe">Stripe</option>
-          <option value="paypal">PayPal</option>
-        </select>
-      </div>
-    </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary btn-hover">Confirm</button>
+        <div class="mb-3">
+          <label class="form-label">General Tickets ($<span style="color: black;">{{ event.general_price }}</span>)</label>
+          <input type="number" name="general_qty" id="generalQty" class="form-control" min="0" value="0" onchange="calculateTotal()">
         </div>
-      </form>
-    </div>
+
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="enableVip" onchange="toggleVipInput(); calculateTotal();">
+          <label class="form-check-label" for="enableVip">
+            Include VIP Tickets ($<span style="color: black;">{{ event.vip_price }}</span>)
+          </label>
+        </div>
+
+        <div class="mb-3" id="vipTicketSection" style="display: none;">
+          <label class="form-label">VIP Tickets</label>
+          <input type="number" name="vip_qty" id="vipQty" class="form-control" min="0" value="0" onchange="calculateTotal()">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Total Price ($)</label>
+          <input type="text" id="totalPriceDisplay" class="form-control" readonly value="0.00">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Choose Payment Method</label>
+          <select class="form-select" name="card_option" id="cardOption" onchange="toggleCardOptions()" required>
+            <option value="">-- Select Option --</option>
+            {% if current_user.cards %}
+              <option value="saved">Use Saved Card</option>
+            {% endif %}
+            <option value="new">Use New Card</option>
+          </select>
+        </div>
+
+        <!-- Saved Cards Section -->
+        <div id="savedCardFields" style="display:none;">
+          <label class="form-label">Select a saved card</label>
+          <select name="saved_card_id" class="form-select">
+            {% for card in current_user.cards %}
+              <option value="{{ card.id }}">**** **** **** {{ card.last4 }} ({{ card.expiry_month }}/{{ card.expiry_year }})</option>
+            {% endfor %}
+          </select>
+          <div class="mt-2">
+            <label class="form-label">CVV</label>
+            <input type="password" name="saved_card_cvv" class="form-control" required>
+          </div>
+        </div>
+
+        <!-- New Card Fields -->
+        <div id="newCardFields" style="display:none;">
+          <div class="mb-3">
+            <label class="form-label">Cardholder Name</label>
+            <input type="text" name="new_cardholder_name" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Card Number</label>
+            <input type="text" name="new_card_number" class="form-control">
+          </div>
+          <div class="row">
+            <div class="col">
+              <label>Expiry Month</label>
+              <input type="number" name="new_expiry_month" class="form-control">
+            </div>
+            <div class="col">
+              <label>Expiry Year</label>
+              <input type="number" name="new_expiry_year" class="form-control">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">CVV</label>
+            <input type="password" name="new_cvv" class="form-control">
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary btn-hover">Confirm</button>
+      </div>
+    </form>
   </div>
+</div>
+
+
 
   <!-- FOOTER + SCRIPTS -->
   <footer class="bg-dark text-white text-center py-3 padding_y">
@@ -281,6 +326,12 @@
       if(navigator.share){
         navigator.share({ title: '{{ event.title }}', url: location.href });
       } else alert('Sharing not supported');
+    }
+
+    function toggleCardOptions() {
+      const selected = document.getElementById('cardOption').value;
+      document.getElementById('savedCardFields').style.display = selected === 'saved' ? 'block' : 'none';
+      document.getElementById('newCardFields').style.display = selected === 'new' ? 'block' : 'none';
     }
   </script>
 </body>

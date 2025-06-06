@@ -103,3 +103,15 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False)
 
     recipient = db.relationship('User', backref='notifications', lazy=True)
+
+
+class Card(db.Model):
+    __tablename__ = 'card'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    cardholder_name = db.Column(db.String(100), nullable=False)
+    last4 = db.Column(db.String(4), nullable=False)
+    expiry_month = db.Column(db.Integer, nullable=False)
+    expiry_year = db.Column(db.Integer, nullable=False)
+
+    user = db.relationship('User', backref='cards', lazy=True)
