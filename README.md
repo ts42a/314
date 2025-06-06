@@ -21,6 +21,6 @@ python backend/app.py
 python3 backend/app.py 
 
 ## Framework and Technologies:
-Frontend: Flask, Bootstrap (HTML/JS/CSS) \n
+Frontend: Flask, Bootstrap (HTML/JS/CSS) /n
 Backend: Python Flask, SQlite \n
 Database ORM: SQLAlchemy
