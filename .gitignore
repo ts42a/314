@@ -18,6 +18,6 @@ __pycache__/
 *.sqlite3
 .vercel
 
-#Database files
+# Database files
 instance/database.db
 *.db
