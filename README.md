@@ -2,14 +2,9 @@
 This is a local web-based event booking application.
 It is a lightweight event booking system built using Flask, Bootstrap, and SQLite.
 
-## Framework and Technologies:
-Frontend: Flask, Bootstrap (HTML/JS/CSS)
-Backend: Python Flask, SQlite
-Database ORM: SQLAlchemy
-
 ## Installation
 ### 1. Clone This Repo
-git clone https://github.com/ts42a/314.git
+git clone https://github.com/ts42a/314.git \n
 cd 314
 ### 2. Create Python Virtual Environment ( on your own preferences )
 python -m venv .venv
@@ -25,3 +20,7 @@ python backend/app.py
 # Or,
 python3 backend/app.py 
 
+## Framework and Technologies:
+Frontend: Flask, Bootstrap (HTML/JS/CSS) \n
+Backend: Python Flask, SQlite \n
+Database ORM: SQLAlchemy
