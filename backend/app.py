@@ -507,6 +507,8 @@ def book_event(event_id):
         customer_name=current_user.name,
         customer_email=current_user.email,
         event_id=event.id,
+        vip_qty=vip_qty,
+        general_qty=general_qty,
         tickets_qty=general_qty + vip_qty,
         total_price=total_price,
         payment_method=payment_method,
@@ -541,25 +543,44 @@ def approve_booking(booking_id):
         booking.status = 'approved'
         event.guests_limit -= booking.tickets_qty
 
-        # Create real QR codes for each ticket
-        for i in range(booking.tickets_qty):
-            ticket_code = str(uuid.uuid4())[:12]
-            qr_img = qrcode.make(ticket_code)
+    else:
+        flash("Not enough spots available to approve this booking.", "danger")
 
-            filename = f"qr_{booking.id}_{i}.png"
-            folder_path = os.path.join("static", "qr")
-            os.makedirs(folder_path, exist_ok=True)
-            qr_path = os.path.join(folder_path, filename)
-            qr_img.save(qr_path)
+    # Generate VIP tickets
+    for i in range(booking.vip_qty):
+        ticket_code = str(uuid.uuid4())[:12]
+        qr_img = qrcode.make(ticket_code)
+        filename = f"qr_{booking.id}_vip_{i}.png"
+        folder_path = os.path.join("static", "qr")
+        os.makedirs(folder_path, exist_ok=True)
+        qr_img.save(os.path.join(folder_path, filename))
 
-            ticket = Ticket(
-                booking_id=booking.id,
-                ticket_code=ticket_code,
-                ticket_type="VIP" if "vip" in booking.payment_method.lower() else "General",
-                qr_code_path=f"qr/{filename}",
-                status='Active'
-            )
-            db.session.add(ticket)
+        ticket = Ticket(
+            booking_id=booking.id,
+            ticket_code=ticket_code,
+            ticket_type="VIP",
+            qr_code_path=f"qr/{filename}",
+            status='Active'
+        )
+        db.session.add(ticket)
+
+    # Generate General tickets
+    for i in range(booking.general_qty):
+        ticket_code = str(uuid.uuid4())[:12]
+        qr_img = qrcode.make(ticket_code)
+        filename = f"qr_{booking.id}_gen_{i}.png"
+        folder_path = os.path.join("static", "qr")
+        qr_img.save(os.path.join(folder_path, filename))
+
+        ticket = Ticket(
+            booking_id=booking.id,
+            ticket_code=ticket_code,
+            ticket_type="General",
+            qr_code_path=f"qr/{filename}",
+            status='Active'
+        )
+
+        db.session.add(ticket)
 
         # Send notification
         if booking.customer_id:
@@ -570,11 +591,8 @@ def approve_booking(booking_id):
                 message=f"Your booking for '{event.title}' has been approved. Your tickets are now available."
             ))
 
-        db.session.commit()
-        flash("Booking approved and tickets generated.", "success")
-    else:
-        flash("Not enough spots available to approve this booking.", "danger")
-
+    db.session.commit()
+    flash("Booking approved.", "success")
     return redirect(url_for('navigate_organizer_dashboard'))
 
 

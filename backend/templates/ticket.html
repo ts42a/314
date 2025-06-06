@@ -79,27 +79,43 @@
             <div class="card-body">
                 <h3 class="card-title text-center text-primary mb-4">My Ticket</h3>
                 <hr>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <p><strong>Event:</strong> {{ booking.event.title }}</p>
-                        <p><strong>Date:</strong> {{ booking.event.date }}</p>
-                        <p><strong>Location:</strong> {{ booking.event.location }}</p>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 bg-light">
+                            <h5 class="text-uppercase text-muted">Event Details</h5>
+                            <p class="mb-1"><strong>Title:</strong> {{ booking.event.title }}</p>
+                            <p class="mb-1"><strong>Date:</strong> {{ booking.event.date }}</p>
+                            <p class="mb-1"><strong>Time:</strong> {{ booking.event.time }}</p>
+                            <p class="mb-0"><strong>Location:</strong> {{ booking.event.location }}</p>
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <p><strong>Customer:</strong> {{ booking.customer_name }}</p>
-                        <p><strong>Tickets:</strong> {{ booking.tickets_qty }}</p>
-                        <p><strong>Payment Method:</strong> {{ booking.payment_method }}</p>
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 bg-light">
+                            <h5 class="text-uppercase text-muted">Booking Info</h5>
+                            <p class="mb-1"><strong>Customer:</strong> {{ booking.customer_name }}</p>
+                            <p class="mb-1"><strong>Email:</strong> {{ booking.customer_email }}</p>
+                            <p class="mb-1"><strong>Tickets:</strong> {{ booking.tickets_qty }}</p>
+                            <p class="mb-0"><strong>Payment:</strong> {{ booking.payment_method }}</p>
+                        </div>
                     </div>
                 </div>
-
                 <hr>
                 <h5 class="text-center mt-4 mb-3">QR Code(s)</h5>
                 <div class="row justify-content-center">
                     {% for ticket in booking.tickets %}
                         <div class="col-6 col-md-4 text-center mb-4">
                             <img src="{{ url_for('static', filename=ticket.qr_code_path) }}" alt="QR Code" class="img-fluid img-thumbnail" style="max-width: 180px;">
-                            <div class="mt-2"><small>{{ ticket.ticket_code }}</small></div>
-                            <div><span class="badge bg-secondary">{{ ticket.ticket_type }}</span></div>
+                            <div class="mt-2">
+                                <small><strong>Ref:</strong> {{ ticket.ticket_code }}</small>
+                            </div>
+                            <div>
+                                <span class="badge {% if ticket.ticket_type == 'VIP' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ ticket.ticket_type }}</span>
+                            </div>
+                            <div class="mt-1">
+                                <small><strong>Event:</strong> {{ booking.event.title }}</small><br>
+                                <small><strong>Date:</strong> {{ booking.event.date }}</small><br>
+                                <small><strong>User:</strong> {{ booking.customer_email }}</small>
+                            </div>
                             <div class="mt-1">
                                 {% if ticket.status == 'Active' %}
                                     <span class="badge bg-success">Active</span>

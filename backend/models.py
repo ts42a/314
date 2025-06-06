@@ -67,6 +67,8 @@ class Booking(db.Model):
     timestamp      = db.Column(db.DateTime, default=datetime.utcnow)
     status         = db.Column(db.String(20), default='pending')  
     total_price    = db.Column(db.Float, nullable=False)
+    vip_qty        = db.Column(db.Integer, default=0)
+    general_qty    = db.Column(db.Integer, default=0)
 
     tickets = db.relationship("Ticket", backref="booking", lazy=True, cascade="all, delete-orphan")
     organizer = db.relationship('User', foreign_keys=[user_id], backref='organized_bookings', lazy=True)
