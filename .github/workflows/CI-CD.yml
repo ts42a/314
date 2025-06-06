@@ -25,12 +25,12 @@ jobs:
         run: |
           python3 -m pytest tests/
 
-      - name: Start Flask server
+      - name: Start Flask server in background
         run: |
-          nohup flask run --host=127.0.0.1 --port=5000 &
-          sleep 5
+          nohup flask run --host=127.0.0.1 --port=5000 > flask.log 2>&1 &
+          sleep 10  
 
-      - name: Deployment Test 
+      - name: Deployment Test
         run: |
-          curl -sSf http://127.0.0.1:5000/ || exit 1
+          curl -sSf http://127.0.0.1:5000/ || (echo "Flask failed to start" && cat flask.log && exit 1)
 
