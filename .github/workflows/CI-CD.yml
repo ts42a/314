@@ -16,7 +16,7 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
-      - name: Run unit tests
+      - name: Run unit and intergration tests
         run: |
           python3 -m pytest tests/
       - name: Start Flask server in background
