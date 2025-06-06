@@ -262,9 +262,7 @@ def navigate_user_dashboard():
         user=current_user,
         bookings=user_bookings,
         today=today,
-
-        total_spent=total_spent
-
+        total_spent=total_spent,
         messages=notifications  # <== reuse existing inbox
 
     )
