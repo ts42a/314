@@ -2,7 +2,7 @@
 .idea/
 
 # Virtual environment
-venv/
+.venv/
 env/
 
 # npm / yarn
