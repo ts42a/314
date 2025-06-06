@@ -473,6 +473,8 @@ def book_event(event_id):
 
     # Payment method validation
     card_option = request.form.get('card_option')
+    payment_method = "Unknown"
+
     if card_option == 'saved':
         card_id = int(request.form.get('saved_card_id', 0))
         cvv = request.form.get('saved_card_cvv', '').strip()
@@ -480,10 +482,20 @@ def book_event(event_id):
         if not card or not cvv:
             flash("Invalid saved card or CVV.", "danger")
             return redirect(url_for('event_page', event_id=event.id))
+        payment_method = f"Saved Card ending in {card.last4}"
+
     elif card_option == 'new':
-        if not request.form.get('new_card_number') or not request.form.get('new_cvv'):
-            flash("Missing new card information.", "danger")
+        card_number = request.form.get('new_card_number', '').strip()
+        cardholder_name = request.form.get('new_cardholder_name', '').strip()
+        exp_month = request.form.get('new_expiry_month')
+        exp_year = request.form.get('new_expiry_year')
+        cvv = request.form.get('new_cvv', '').strip()
+
+        if not all([card_number, cardholder_name, exp_month, exp_year, cvv]):
+            flash("All new card fields are required.", "danger")
             return redirect(url_for('event_page', event_id=event.id))
+
+        payment_method = f"New Card ending in {card_number[-4:]}"
     else:
         flash("Select a valid payment option.", "danger")
         return redirect(url_for('event_page', event_id=event.id))
@@ -496,8 +508,8 @@ def book_event(event_id):
         customer_email=current_user.email,
         event_id=event.id,
         tickets_qty=general_qty + vip_qty,
-        payment_method=card_option,
         total_price=total_price,
+        payment_method=payment_method,
         status='pending'  # ← Wait for organizer approval
     )
     db.session.add(booking)

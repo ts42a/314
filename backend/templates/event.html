@@ -263,27 +263,28 @@
         <div id="newCardFields" style="display:none;">
           <div class="mb-3">
             <label class="form-label">Cardholder Name</label>
-            <input type="text" name="new_cardholder_name" class="form-control">
+            <input type="text" name="new_cardholder_name" class="form-control" required>
           </div>
           <div class="mb-3">
             <label class="form-label">Card Number</label>
-            <input type="text" name="new_card_number" class="form-control">
+            <input type="text" name="new_card_number" class="form-control" required>
           </div>
           <div class="row">
             <div class="col">
               <label>Expiry Month</label>
-              <input type="number" name="new_expiry_month" class="form-control">
+              <input type="number" name="new_expiry_month" class="form-control" required>
             </div>
             <div class="col">
               <label>Expiry Year</label>
-              <input type="number" name="new_expiry_year" class="form-control">
+              <input type="number" name="new_expiry_year" class="form-control" required>
             </div>
           </div>
           <div class="mb-3">
             <label class="form-label">CVV</label>
-            <input type="password" name="new_cvv" class="form-control">
+            <input type="password" name="new_cvv" class="form-control" required>
           </div>
         </div>
+
 
       </div>
       <div class="modal-footer">
@@ -329,10 +330,25 @@
     }
 
     function toggleCardOptions() {
+      const saved = document.getElementById('savedCardFields');
+      const newCard = document.getElementById('newCardFields');
       const selected = document.getElementById('cardOption').value;
-      document.getElementById('savedCardFields').style.display = selected === 'saved' ? 'block' : 'none';
-      document.getElementById('newCardFields').style.display = selected === 'new' ? 'block' : 'none';
+
+      saved.style.display = selected === 'saved' ? 'block' : 'none';
+      newCard.style.display = selected === 'new' ? 'block' : 'none';
+
+      // remove required from all inputs
+      document.querySelectorAll('#savedCardFields input, #newCardFields input').forEach(i => i.required = false);
+
+      // add required only to visible ones
+      if (selected === 'saved') {
+        document.querySelectorAll('#savedCardFields input').forEach(i => i.required = true);
+      } else if (selected === 'new') {
+        document.querySelectorAll('#newCardFields input').forEach(i => i.required = true);
+      }
     }
+
+
   </script>
 </body>
 </html>
