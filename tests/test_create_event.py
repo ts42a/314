@@ -19,7 +19,7 @@ def test_create_event(client, app, sample_organizer):
         'date_single': '2025-06-12',
         'time_single': '14:00',
         'location': 'Online',
-        'general_price': '25.50',  # Changed from 'price' to 'general_price'
+        'general_price': '25.50',  
         'vip_price': '50.00',      # Added VIP price
         'offer_vip': 'on',         # Added VIP checkbox
         'capacity': '50',

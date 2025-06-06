@@ -1,0 +1,36 @@
+name: unittest and deployment test
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      FLASK_APP: app.py
+      SECRET_KEY: secret_key
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: |
+          python3 -m pytest tests/
+
+      - name: Start Flask server
+        run: |
+          nohup flask run --host=127.0.0.1 --port=5000 &
+          sleep 5
+
+      - name: Deployment Test 
+        run: |
+          curl -sSf http://127.0.0.1:5000/ || exit 1
+
