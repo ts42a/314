@@ -34,7 +34,7 @@ login_manager.login_view = 'home'
 
 @app.route("/")
 def index():
-    return "App is running"
+    return render_template("index.html")
 
 @login_manager.user_loader
 def load_user(user_id):
