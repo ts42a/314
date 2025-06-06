@@ -789,4 +789,7 @@ if __name__ == '__main__':
         # Every restart reset all data records
         # List all users
         users = User.query.all()
-        print(f"Total
+        print(f"Total users in database: {len(users)}")
+        for user in users:
+            print(f"  - {user.email} ({user.role})")
+    app.run(debug=True)
